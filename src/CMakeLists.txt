@@ -12,7 +12,12 @@ endif()
 # 获取库的源文件列表
 file(GLOB_RECURSE ALL_SOURCES 
   ${CMAKE_CURRENT_SOURCE_DIR}/*.c*)
-
+# 如果只想使用特定文件夹下的源文件，或者特定文件，命令如下：
+# file(GLOB SOME_SOURCES 
+#   ${CMAKE_CURRENT_SOURCE_DIR}/core/*.c*          # 特定文件夹
+#   ${CMAKE_CURRENT_SOURCE_DIR}/cv/vn_cv_utils.cc  # 特定文件
+# )
+# message("Some sources ${SOME_SOURCES}")
 
 # 获取库的头文件列表
 file(GLOB_RECURSE ALL_HEADERS 
@@ -22,17 +27,18 @@ file(GLOB_RECURSE ALL_HEADERS
 add_library(${PROJECT_NAME} ${ALL_SOURCES} ${ALL_HEADERS})
 target_link_libraries(${PROJECT_NAME}
   ${OpenCV_LIBRARIES}
-  ${PROJECT_SOURCE_DIR}/libs/Tensorflow/tensorflow.lib
-  ${PROJECT_SOURCE_DIR}/libs/Tensorflow/tensorflow_framework.lib
-  ${PROJECT_SOURCE_DIR}/libs/Openpose/openpose.lib
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe3rdparty/lib/gflags.lib
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe3rdparty/lib/glog.lib
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe/lib/caffe.lib
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe/lib/caffeproto.lib
-  ${PROJECT_SOURCE_DIR}/libs/HCNetSDK/GdiPlus.lib
-  ${PROJECT_SOURCE_DIR}/libs/HCNetSDK/HCCore.lib
-  ${PROJECT_SOURCE_DIR}/libs/HCNetSDK/HCNetSDK.lib
-  ${PROJECT_SOURCE_DIR}/libs/HCNetSDK/PlayCtrl.lib
+   D:/videorepo/libs/HCNetSDK/HCNetSDK.lib
+   D:/videorepo/libs/HCNetSDK/HCCore.lib
+   D:/videorepo/libs/HCNetSDK/GdiPlus.lib
+   D:/videorepo/libs/HCNetSDK/PlayCtrl.lib
+   D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow.lib
+   D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow_framework.lib
+E:/openpose/openpose-1.5.1/build/src/openpose/Release/openpose.lib
+E:/openpose/openpose-1.5.1/3rdparty/windows/opencv/x64/vc15/lib/opencv_world401.lib
+E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/gflags.lib
+E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/glog.lib
+E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffe.lib
+E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffeproto.lib
   )
 
 # 给头文件和源文件分组，方便在Visual Studio里查看

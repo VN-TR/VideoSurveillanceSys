@@ -15,13 +15,11 @@ find_package(OpenCV REQUIRED)
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
-  ${VnUtils_INCLUDE_DIRS}
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/opencv/include
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe/include
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe/include2
-  ${PROJECT_SOURCE_DIR}/thirdparty/windows/caffe3rdparty/include
-  ${PROJECT_SOURCE_DIR}/thirdparty/tensorflow/cpu1.14/include
-  ${PROJECT_SOURCE_DIR}/thirdparty/tensorflow/cpu1.14/include/tensorflow
+  E:/openpose/openpose-1.5.1/include
+  E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include
+  E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include2
+  E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/include
+  D:/Tensorflow/cpu1.14/libtensorflow/include
   )
 
 # 设置：生成库文件的地址
