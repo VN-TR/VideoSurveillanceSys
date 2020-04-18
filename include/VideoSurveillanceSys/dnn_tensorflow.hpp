@@ -3,23 +3,16 @@
 #include <iostream>
 #include "tensorflow/c/c_api.h"
 #include <stdio.h>
-#include <vector>
 #include <string.h>
-#include <iostream>
 #include <math.h>
 #include <fstream>
 #include <utility>
-#include <vector>
-#include <iostream>
 #include <regex>
 #include <numeric>
 #include <opencv2/imgproc/imgproc.hpp>
-#include<opencv2/opencv.hpp>
-#include <iostream>
+#include <opencv2/opencv.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
-#include <string>
 
 
 #ifndef _DNN_TENSORFLOW_H

@@ -1,9 +1,7 @@
 #include "VideoSurveillanceSys/dnn_tensorflow.hpp"
 #include <assert.h>
-#include <math.h>
 #include <algorithm>
 
-#include<stdio.h>
 
 
 dnn_tensorflow::dnn_tensorflow()
