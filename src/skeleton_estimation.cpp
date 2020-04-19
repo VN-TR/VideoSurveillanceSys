@@ -9,22 +9,22 @@
  */
 
  // INCLUDE
-#include "VideoSurveillanceSys/skeleten_estimation.h"
+#include "VideoSurveillanceSys/skeleton_estimation.h"
 
 // CODE
 namespace VisionMonitor
 {
-	SkeletenEstimation::SkeletenEstimation():opWrapper_(op::ThreadManagerMode::Asynchronous)
+	SkeletonEstimation::SkeletonEstimation():opWrapper_(op::ThreadManagerMode::Asynchronous)
 	{
 		
 	}
 
-	SkeletenEstimation::~SkeletenEstimation()
+	SkeletonEstimation::~SkeletonEstimation()
 	{
 
 	}
 
-	void SkeletenEstimation::init()
+	void SkeletonEstimation::init()
 	{
 		op::log("Starting OpenPose demo...", op::Priority::High);
 
@@ -40,13 +40,14 @@ namespace VisionMonitor
 		opWrapper_.start();
 	}
 
-	void SkeletenEstimation::display(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
+	void SkeletonEstimation::display(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
 	{
 		try
 		{
 			if (datumsPtr != nullptr && !datumsPtr->empty())
 			{
 				Mat skeleten = datumsPtr->at(0)->cvOutputData;
+				
 				resize(skeleten, skeleten, Size(skeleten.cols, skeleten.rows));
 				// Display image
 				cv::imshow(OPEN_POSE_NAME_AND_VERSION + " - Tutorial C++ API", skeleten);
@@ -61,7 +62,7 @@ namespace VisionMonitor
 		}
 	}
 
-	void SkeletenEstimation::printKeypoints(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
+	void SkeletonEstimation::printKeypoints(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
 	{
 		try
 		{
@@ -81,7 +82,7 @@ namespace VisionMonitor
 		}
 	}
 
-	void SkeletenEstimation::poseEstimatiom(const Mat image)
+	void SkeletonEstimation::poseEstimatiom(const Mat image)
 	{
 		auto datumProcessed = opWrapper_.emplaceAndPop(image);
 		if (datumProcessed != nullptr)
@@ -89,22 +90,36 @@ namespace VisionMonitor
 			auto s = datumProcessed->at(0)->poseScores.toString();
 			s.erase(s.find_last_not_of(" "));
 
-			//printKeypoints(datumProcessed);
-			//std::cout << "×ó½Å:" << endl;
-			//std::cout << datumProcessed->at(0)->poseKeypoints[57] << " , "
-			//	<< datumProcessed->at(0)->poseKeypoints[58] << " , "
-			//	<< datumProcessed->at(0)->poseKeypoints[59] << std::endl;
-			//std::cout << "ÓÒ½Å:" << endl;
-			//std::cout << datumProcessed->at(0)->poseKeypoints[69] << " , "
-			//	<< datumProcessed->at(0)->poseKeypoints[70] << " , "
-			//	<< datumProcessed->at(0)->poseKeypoints[71] << std::endl;
-
+			peopleCount_ = datumProcessed->at(0)->poseKeypoints.getSize(0);
+			skeletonPoint_.clear();
+			skeletonPoint_.resize(peopleCount_ * 3);
+			for (int i = 0; i < peopleCount_*75 ; i++)
+			{
+				skeletonPoint_[i] = datumProcessed->at(0)->poseKeypoints[i];
+			}
+			Mat skeletonImage_ = datumProcessed->at(0)->cvOutputData;
 			display(datumProcessed);
 		}
 		else
 		{
 			op::log("Image could not be processed.", op::Priority::High);
 		}
+	}
+
+
+	Mat SkeletonEstimation::getSkeletonImage()
+	{
+		return skeletonImage_;
+	}
+
+	vector<float> SkeletonEstimation::getSkeletonPoint()
+	{
+		return skeletonPoint_;
+	}
+
+	int SkeletonEstimation::getPeopleCount()
+	{
+		return peopleCount_;
 	}
 
 }
