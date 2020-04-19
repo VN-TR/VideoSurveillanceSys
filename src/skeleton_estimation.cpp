@@ -1,9 +1,9 @@
 /**Copyright (C) 2018-2018 Visionnav Robotics Limited. All right reserved
  * @file: steketen_estimation.cpp
  * @version: V 1.0.0
- * @author: xzhang@Visionnav.com;
+ * @author: bcyang@Visionnav.com;
  * @date: 2020-04-18
- * @brief: 相机类函数实现;
+ * @brief: 骨骼识别
  * @details:
  * @verbatim:
  */
@@ -27,7 +27,7 @@ namespace VisionMonitor
 	void SkeletonEstimation::init()
 	{
 		op::log("Starting OpenPose demo...", op::Priority::High);
-
+		
 		// Configuring OpenPose
 		op::log("Configuring OpenPose...", op::Priority::High);
 
@@ -92,8 +92,8 @@ namespace VisionMonitor
 
 			peopleCount_ = datumProcessed->at(0)->poseKeypoints.getSize(0);
 			skeletonPoint_.clear();
-			skeletonPoint_.resize(peopleCount_ * 3);
-			for (int i = 0; i < peopleCount_*75 ; i++)
+			skeletonPoint_.resize(peopleCount_ * 75);
+			for (int i = 0; i < peopleCount_ * 75 ; i++)
 			{
 				skeletonPoint_[i] = datumProcessed->at(0)->poseKeypoints[i];
 			}

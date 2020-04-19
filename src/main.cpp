@@ -135,7 +135,7 @@
 //	Timer mytime;
 //
 //	dnn_tensorflow tfutil;
-//	std::vector<const char*> _INPUT_NODES;
+//	std::vector<const char*> INPUT_NODES_;
 //	std::vector<const char*> _OUTPUT_NODES;
 //	string MODEL_NAME;
 //	int INPUT_H;
@@ -146,15 +146,15 @@
 //	std::vector<std::int64_t> out_dims;
 //	TF_Output input_ops[1];
 //	TF_Output output_ops[16];
-//	_INPUT_NODES = { "image_tensor" };
+//	INPUT_NODES_ = { "image_tensor" };
 //	_OUTPUT_NODES = { "detection_boxes", "detection_scores", "detection_classes", "num_detections" };
 //	//_OUTPUT_NODES = {"num_detections" };
 //	MODEL_NAME = "model/frozen_inference_graph.pb";
 //	const std::string label_path = "model/labelmap.pbtxt";
 //
 //
-//	vector<labelmap> label_map;
-//	label_map.resize(5);
+//	vector<labelmap> label_map_;
+//	label_map_.resize(5);
 //	// ≥ı ºªØtensorflow session
 //	char buffer[256];
 //	char id_char[4] = "id:";
@@ -171,7 +171,7 @@
 //		{
 //			string aa = buffer;
 //			int bb = std::stoi(aa.substr(5, aa.size() - 1));
-//			label_map[label_count].id = bb;
+//			label_map_[label_count].id = bb;
 //		}
 //		if (strstr(buffer, "name:"))
 //		{
@@ -195,8 +195,8 @@
 //			{
 //				out_label = "Sun";
 //			}
-//			label_map[label_count].labelname = out_label;
-//			cout << label_map[label_count].labelname << endl;
+//			label_map_[label_count].labelname = out_label;
+//			cout << label_map_[label_count].labelname << endl;
 //			label_count++;
 //		}
 //
@@ -216,7 +216,7 @@
 //
 //	tfutil.LoadGraph(MODEL_NAME.c_str(), true);
 //
-//	tfutil.CreateIO_Ops(_INPUT_NODES, input_ops);
+//	tfutil.CreateIO_Ops(INPUT_NODES_, input_ops);
 //	tfutil.CreateIO_Ops(_OUTPUT_NODES, output_ops);
 //
 //	tfutil.BuildSession();
@@ -369,7 +369,7 @@
 //				for (int i = 0; i < goodindex; i++)
 //				{
 //					string label;
-//					for (auto lab : label_map)
+//					for (auto lab : label_map_)
 //					{
 //						if (classes[i] == lab.id)
 //							label = lab.labelname;

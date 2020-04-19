@@ -5,11 +5,11 @@
 
 
 /**Copyright (C) 2020-2020 Visionnav Robotics Limited. All right reserved
-* @file: camera.hh
+* @file: skeleton_estimation.hh
 * @version: V 1.0.0
 * @author: bcyang@Visionnav.com;
 * @date: 2020-04-18
-* @brief: 相机类头文件;
+* @brief: 骨骼识别头文件;
 * @details:
 * @verbatim:
 */
@@ -113,8 +113,24 @@ namespace VisionMonitor
 
 	private:
 
+		/*!
+		* @ brief  openpose自带的骨架输出图
+		* @ author ybc
+		* @ date   2020年4月19日
+		* @ param[in]  const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> & datumsPtr 计算结果
+		* @ return     void  
+		* @ note
+		*/
 		void display(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr);
 
+		/*!
+		* @ brief  打印骨架坐标
+		* @ author ybc
+		* @ date   2020年4月19日
+		* @ param[in]  const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> & datumsPtr 计算结果
+		* @ return     void  
+		* @ note
+		*/
 		void printKeypoints(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr);
 
 		op::Wrapper					opWrapper_;							/*! <openpose 封装 */
