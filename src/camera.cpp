@@ -12,6 +12,7 @@
 #include "VideoSurveillanceSys/camera.h"
 #include "VideoSurveillanceSys/monitor.h"
 #include "VideoSurveillanceSys/file_operation.h"
+#include "VideoSurveillanceSys/common.h"
 #include <io.h>
 #include <assert.h>
 #include <windows.h>
@@ -22,13 +23,19 @@ using namespace std;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera() {}
+	Camera::Camera():frame_index_(0) {}
 	Camera::~Camera() {}
 	
 	bool Camera::initialize(const Params &param)
 	{
 		param_ = param;
 		object_detection_.Init();
+
+		Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
+		Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
+		Inform_human_image_ = cv::imread("./inform_image/3.png", CV_LOAD_IMAGE_UNCHANGED);
+		Inform_good_image_ = cv::imread("./inform_image/4.png", CV_LOAD_IMAGE_UNCHANGED);
+
 		HKinit(param_);
 
 		return true;
@@ -63,6 +70,59 @@ namespace VisionMonitor
 
 		lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
 		return true;
+	}
+
+	std::thread* Camera::startMonitor()
+	{
+		//if (path_loaded_ && frame_index_ >= test_image_path_.size())
+		//{
+		//	return nullptr;
+		//}
+		return new std::thread(&Camera::monitorThread, this);
+	}
+
+	void Camera::monitorThread()
+	{
+		std::string pic_name;
+		image_ = grabbingFrame(param_, pic_name);
+	}
+
+	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)
+	{
+		char PicName[256] = { 0 };
+		char sJpegPicBuffer[1024] = { 0 };
+		cv::Mat img, org;
+
+		int64_t time = common::get_time_stamp();
+		LONG iCurChan = lRealPlayHandle_;
+		sprintf_s(PicName, ".\\image_log\\camera%d\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+
+		BYTE *pBuffer1 = new BYTE[3000 * 2000];
+		DWORD dwBufSize1 = 1920 * 1080 * 1.5;
+		DWORD dwBufSize2;
+
+		if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
+		{
+			cv::Mat rawData(1, dwBufSize2, CV_8UC1, (void*)pBuffer1);
+			cv::Mat decodedImage = cv::imdecode(rawData, 1);
+			if (decodedImage.data != NULL)
+			{
+				img = decodedImage;
+				if (params.image_log_switch)
+				{
+					if (frame_index_ % 10)
+					{
+						imwrite(PicName, img);
+					}
+					
+					frame_index_++;
+				}
+			}
+
+		};
+		delete[] pBuffer1;
+
+		return img;
 	}
 
 	void Camera::setID(int id)
@@ -135,4 +195,6 @@ namespace VisionMonitor
 	{
 		distortion_coeffs.copyTo(distortion_coeffs_);
 	}
+
+
 }

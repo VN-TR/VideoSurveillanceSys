@@ -13,7 +13,6 @@
 #include "VideoSurveillanceSys/monitor.h"
 
 #include <string>
-//#include <crtdbg.h>
 #include <iostream>
 
 using namespace std;
@@ -21,13 +20,12 @@ using namespace VisionMonitor;
 
 // CODE
 static Monitor monitor;
-//CLog mylog;
 
 
-//EXTERN_C SURVEILLANCE_API bool __stdcall initMointor()
-//{
-//	return monitor.initMointor();
-//}
+EXTERN_C SURVEILLANCE_API bool __stdcall initMointor()
+{
+	return monitor.initiate();
+}
 //
 //EXTERN_C SURVEILLANCE_API bool __stdcall closeMonitor()
 //{

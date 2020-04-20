@@ -66,6 +66,14 @@ namespace VisionMonitor
 		*/
 		bool HKinit(const Params &param);
 
+
+		std::thread* Camera::startMonitor();
+
+
+		void Camera::monitorThread();
+
+		cv::Mat Camera::grabbingFrame(Params &params, std::string &img_name);
+
 		/**
 		* @brief 设置设备编号
 		* @param[in] int id 设备编号
@@ -186,6 +194,7 @@ namespace VisionMonitor
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
 
 			//运行参数
+			int							frame_index_;
 			Params						param_;
 			ObjectDetection				object_detection_;
 			LONG						lUserID_;
@@ -193,6 +202,11 @@ namespace VisionMonitor
 			LONG						lRealPlayHandle_;
 			typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
 			HWND						hWnd_;
+			cv::Mat						image_;
+			cv::Mat						Title_image_;
+			cv::Mat						Inform_car_image_;
+			cv::Mat						Inform_human_image_;
+			cv::Mat						Inform_good_image_;
 
 	}; // end class camera
 

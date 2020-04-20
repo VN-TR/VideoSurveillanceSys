@@ -42,6 +42,9 @@ namespace VisionMonitor
 		bool initiate();
 
 		
+		void start();
+
+		void monitorThread();
 
 	private:
 
@@ -71,9 +74,13 @@ namespace VisionMonitor
 			T &value
 		);
 
-		Params				    param_;		    /*!< 处理参数 */
-		std::vector<Camera>	    cameras_;       /*!< 相机列表 */
 
+
+
+		bool					is_start;				/*!< 监测已开启 */
+		Params				    param_;					/*!< 处理参数 */
+		std::vector<Camera>	    cameras_;				/*!< 相机列表 */
+		std::thread				monitorThread_;			/*!< 监测进程 */
 
 	};
 

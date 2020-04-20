@@ -53,6 +53,39 @@ namespace VisionMonitor
 		return true;
 	}
 
+	void Monitor::start()
+	{
+		if (monitorThread_.get_id() == std::thread::id())
+		{
+			is_start = true;
+			monitorThread_ = std::thread(&Monitor::monitorThread, this);
+		}
+	}
+
+	void Monitor::monitorThread()
+	{
+		while (is_start)
+		{
+
+			std::vector<std::thread*> threads;
+			for (auto& camera : cameras_)
+			{
+				auto thread = camera.startMonitor();
+				if (thread)
+					threads.push_back(thread);
+			}
+
+			if (threads.empty())break;
+			for (auto thread : threads)
+			{
+				thread->join();
+				delete thread;
+			}
+
+
+		}
+	}
+
 	bool Monitor::loadParames()
 	{
 		// 加载参数到map中;
