@@ -1,6 +1,6 @@
-//#include <stdio.h>
-//#include <iostream>
-//#include "Windows.h"
+#include <stdio.h>
+#include <iostream>
+#include "Windows.h"
 //#include "HCNetSDK/HCNetSDK.h"
 //#include "HCNetSDK/plaympeg4.h"
 //#include <time.h>
@@ -478,8 +478,13 @@
 //	NET_DVR_Cleanup();
 //	return;
 //}
-
+//
+#include "VideoSurveillanceSys/monitor.h"
+using namespace VisionMonitor;
 int main()
 {
+	Monitor monitor;
+	monitor.initiate();
+	getchar();
 	return 0;
 }
