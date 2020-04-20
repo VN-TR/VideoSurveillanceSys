@@ -10,11 +10,13 @@ set(CMAKE_CXX_STANDARD 14)
 
 # 第三方依赖库
 find_package(OpenCV REQUIRED)
+find_package(VnUtils 0.0.1 REQUIRED)
 
 # 头文件目录
 include_directories(
   include
   ${OpenCV_INCLUDE_DIRS}
+  ${VnUtils_INCLUDE_DIRS}
   E:/openpose/openpose-1.5.1/include
   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include
   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include2

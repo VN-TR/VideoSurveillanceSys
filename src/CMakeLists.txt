@@ -27,6 +27,7 @@ file(GLOB_RECURSE ALL_HEADERS
 add_library(${PROJECT_NAME} ${ALL_SOURCES} ${ALL_HEADERS})
 target_link_libraries(${PROJECT_NAME}
   ${OpenCV_LIBRARIES}
+  ${VnUtils_LIBS}
    D:/videorepo/libs/HCNetSDK/HCNetSDK.lib
    D:/videorepo/libs/HCNetSDK/HCCore.lib
    D:/videorepo/libs/HCNetSDK/GdiPlus.lib
