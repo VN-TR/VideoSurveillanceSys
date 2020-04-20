@@ -24,7 +24,32 @@ namespace VisionMonitor
 	bool Monitor::initiate()
 	{
 		FileOperation fileopt;
-		loadParames();
+
+		if (!loadParames())
+		{
+			return false;
+		}
+
+		fileopt.checkAndCreateDir(".\\image_log");
+
+		for (size_t i = 0; i < cameras_.size(); i++)
+		{
+			fileopt.checkAndCreateDir(".\\image_log\\camera" + std::to_string(cameras_[i].getID()));
+
+			std::cout << "camera[" << cameras_[i].getID() << "] initialize..." << std::endl;
+			if (cameras_[i].initialize(param_))
+			{
+				std::cout << "OK" << std::endl;
+			}
+			else
+			{
+				std::cout << "Fail" << std::endl;
+				return false;
+			}
+
+		}
+
+
 		return true;
 	}
 
@@ -55,10 +80,10 @@ namespace VisionMonitor
 		tinyxml2::XMLElement *params_root = params_doc->RootElement();
 		tinyxml2::XMLElement *camera_root = cameras_doc->RootElement();
 
+		//加载相机参数;
 		double mi[9], md[4];
 		std::vector<std::string> vct_mi, vct_md;
 		cv::Mat intrinsic_matrix, distortion_coeffs;
-
 		for (tinyxml2::XMLElement *camera_xml = camera_root->FirstChildElement(); 
 			camera_xml != nullptr; camera_xml = camera_xml->NextSiblingElement())
 		{
@@ -93,7 +118,7 @@ namespace VisionMonitor
 			cameras_.push_back(cameratemp);
 		}
 
-
+		//加载监控参数;
 		for (tinyxml2::XMLElement *param_xml = params_root->FirstChildElement(); param_xml != nullptr; param_xml = param_xml->NextSiblingElement())
 		{
 			parames_map.insert(std::make_pair(param_xml->Attribute("name"), param_xml->Attribute("value")));
@@ -105,7 +130,6 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "connect_time", param_.connect_time);
 		parameValue<int>(parames_map, "int", "reconect_time", param_.reconnect_time);
 		
-		cout << param_.data_collection_stage << endl;
 		delete params_doc;
 		delete cameras_doc;
 

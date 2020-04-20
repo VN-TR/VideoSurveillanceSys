@@ -16,6 +16,7 @@
 #include <opencv/cv.h>
 #include "HCNetSDK/HCNetSDK.h"
 #include "HCNetSDK/plaympeg4.h"
+#include "VideoSurveillanceSys/object_detection.h"
 #include <thread>
 
 using namespace cv;
@@ -45,12 +46,32 @@ namespace VisionMonitor
 
 		~Camera();
 
+		/*!
+		* @ brief  初始化相机,设置连接时间与重连时间，注册设备，获取设备基本信息
+		* @ author ybc
+		* @ date   2020年4月20日
+		* @ param[in]  const Params & param 输入监控参数
+		* @ return     bool  返回相机初始化结果
+		* @ note
+		*/
+		bool initialize(const Params &param);
+
+		/*!
+		* @ brief  相机硬件初始化
+		* @ author ybc
+		* @ date   2020年4月20日
+		* @ param[in]  const Params & param 输入监控参数
+		* @ return     bool  返回相机初始化结果
+		* @ note
+		*/
+		bool HKinit(const Params &param);
+
 		/**
-	* @brief 设置设备编号
-	* @param[in] int id 设备编号
-	* @return 无
-	* @retval void
-	*/
+		* @brief 设置设备编号
+		* @param[in] int id 设备编号
+		* @return 无
+		* @retval void
+		*/
 		void setID(int id);
 
 		/**
@@ -163,6 +184,15 @@ namespace VisionMonitor
 			std::string					pwd_;						/*! <密码 */
 			cv::Mat						intrinsic_matrix_;			/*! <摄像头内部参数 */
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
+
+			//运行参数
+			Params						param_;
+			ObjectDetection				object_detection_;
+			LONG						lUserID_;
+			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;
+			LONG						lRealPlayHandle_;
+			typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
+			HWND						hWnd_;
 
 	}; // end class camera
 

@@ -478,7 +478,7 @@
 //	NET_DVR_Cleanup();
 //	return;
 //}
-//
+
 #include "VideoSurveillanceSys/monitor.h"
 using namespace VisionMonitor;
 int main()
