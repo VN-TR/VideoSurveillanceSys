@@ -31,17 +31,25 @@ namespace VisionMonitor
 	bool Camera::initialize(const Params &param)
 	{
 		param_ = param;
-		object_detection_.Init();
-		//skeleton_estimation_.init();
-		opWrapper.disableMultiThreading();
-		opWrapper.start();
 
-		Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_human_image_ = cv::imread("./inform_image/3.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_good_image_ = cv::imread("./inform_image/4.png", CV_LOAD_IMAGE_UNCHANGED);
+		//如果是不是图片采集阶段（运行阶段）则初始化物体检测和骨骼检测
+		if (param_.data_collection_stage == false)
+		{
+			object_detection_.Init();
+			//skeleton_estimation_.init();
+			opWrapper.disableMultiThreading();
+			opWrapper.start();
 
-		HKinit(param_);
+			Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
+			Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
+			Inform_human_image_ = cv::imread("./inform_image/3.png", CV_LOAD_IMAGE_UNCHANGED);
+			Inform_good_image_ = cv::imread("./inform_image/4.png", CV_LOAD_IMAGE_UNCHANGED);
+		}
+		//如果是图片采集阶段或运行阶段使用实时数据时,初始化相机硬件
+		if (param_.data_collection_stage == true || param_.data_from)
+		{
+			HKinit(param_);
+		}
 
 		return true;
 	}
@@ -68,10 +76,10 @@ namespace VisionMonitor
 		hWnd_ = GetConsoleWindow();
 		NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
 		struPlayInfo.hPlayWnd = hWnd_; //需要SDK 解码时句柄设为有效值，仅取流不解码时可设为空
-		struPlayInfo.lChannel = 1; //预览通道号
-		struPlayInfo.dwStreamType = 0; //0-主码流，1-子码流，2-码流3，3-码流4，以此类推
-		struPlayInfo.dwLinkMode = 0; //0- TCP 方式，1- UDP 方式，2- 多播方式，3- RTP 方式，4-RTP/RTSP，5-RSTP/HTTP
-		struPlayInfo.bBlocked = 0; //0- 非阻塞取流，1- 阻塞取流
+		struPlayInfo.lChannel = param.lChannel; //预览通道号
+		struPlayInfo.dwStreamType = param.dwStreamType; //0-主码流，1-子码流，2-码流3，3-码流4，以此类推
+		struPlayInfo.dwLinkMode = param.dwLinkMode; //0- TCP 方式，1- UDP 方式，2- 多播方式，3- RTP 方式，4-RTP/RTSP，5-RSTP/HTTP
+		struPlayInfo.bBlocked = param.bBlocked; //0- 非阻塞取流，1- 阻塞取流
 
 		lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
 		return true;
@@ -88,11 +96,12 @@ namespace VisionMonitor
 
 	void Camera::monitorThread()
 	{
+	
 		std::string pic_name;
 		image_ = grabbingFrame(param_, pic_name);
-		if (image_.data != NULL)
+		if (!param_.data_collection_stage)
 		{
-			if (frame_index_ % 100 == 0)
+			if (image_.data != NULL)
 			{
 				auto datumProcessed = opWrapper.emplaceAndPop(image_);
 				if (datumProcessed != nullptr)
@@ -102,16 +111,18 @@ namespace VisionMonitor
 					skeleton_image_ = datumProcessed->at(0)->cvOutputData;
 
 				}
-			}
-			cout << frame_index_ << endl;
-			
-			AI_result_ = object_detection_.DL_Detector(image_);
-			if (AI_result_.size() != 0)
-			{
-				image_ = AI_result_.back().itemImage;
-				AI_result_.clear();
+				cout << frame_index_ << endl;
+
+				AI_result_ = object_detection_.DL_Detector(image_);
+				if (AI_result_.size() != 0)
+				{
+					image_ = AI_result_.back().itemImage;
+					AI_result_.clear();
+				}
 			}
 		}
+
+		
 
 	}
 
@@ -136,14 +147,15 @@ namespace VisionMonitor
 			if (decodedImage.data != NULL)
 			{
 				img = decodedImage;
-				if (params.image_log_switch)
+				resize(img, img, Size(img.cols, img.rows));
+				if (params.image_log_switch&&!params.data_collection_stage)
 				{
-					if (frame_index_ % 10)
-					{
-						//imwrite(PicName, img);
-					}
-					
-					frame_index_++;
+					imwrite(PicName, img);
+				}
+				else if (params.data_collection_stage)
+				{
+					imwrite(PicName, img);
+					waitKey(params.data_collection_interval);
 				}
 			}
 		};

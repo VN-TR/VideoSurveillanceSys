@@ -66,6 +66,8 @@ namespace VisionMonitor
 	{
 		while (is_start)
 		{
+			Timer mytime;
+			mytime.tic();
 
 			std::vector<std::thread*> threads;
 			for (auto& camera : cameras_)
@@ -92,6 +94,7 @@ namespace VisionMonitor
 					cout << frame.cols << endl;
 				}
 			}
+			cout << "total time" << mytime.toc() << endl;
 
 
 		}
@@ -173,7 +176,11 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "data_from", param_.data_from);
 		parameValue<int>(parames_map, "int", "connect_time", param_.connect_time);
 		parameValue<int>(parames_map, "int", "reconect_time", param_.reconnect_time);
-		
+		parameValue<int>(parames_map, "int", "data_collection_interval", param_.data_collection_interval);
+		parameValue<int>(parames_map, "int", "lChannel", param_.lChannel);
+		parameValue<int>(parames_map, "int", "dwStreamType", param_.dwStreamType);
+		parameValue<int>(parames_map, "int", "dwLinkMode", param_.dwLinkMode);
+		parameValue<int>(parames_map, "int", "bBlocked", param_.bBlocked);
 		delete params_doc;
 		delete cameras_doc;
 
