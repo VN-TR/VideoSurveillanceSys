@@ -20,7 +20,7 @@
 #include <openpose/headers.hpp>
 #include <thread>
 using namespace cv;
-
+typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
 
 // DECLARATION PART
 namespace VisionMonitor
@@ -205,6 +205,11 @@ namespace VisionMonitor
 			//运行参数
 			std::vector<Saveditem>      AI_result_;
 
+
+
+			bool                        path_loaded_;
+			std::vector<std::string>    test_image_path_;
+
 			int							frame_index_;
 			Params						param_;
 			ObjectDetection				object_detection_;
@@ -212,7 +217,7 @@ namespace VisionMonitor
 			LONG						lUserID_;
 			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;
 			LONG						lRealPlayHandle_;
-			typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
+			
 			HWND						hWnd_;
 			cv::Mat						image_;
 			Mat display_image;

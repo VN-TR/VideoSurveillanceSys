@@ -132,35 +132,55 @@ namespace VisionMonitor
 		char PicName[256] = { 0 };
 		char sJpegPicBuffer[1024] = { 0 };
 		cv::Mat img, org;
-
-		int64_t time = common::get_time_stamp();
-		LONG iCurChan = lRealPlayHandle_;
-		sprintf_s(PicName, ".\\image_log\\camera%d\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
-
-		BYTE *pBuffer1 = new BYTE[3000 * 2000];
-		DWORD dwBufSize1 = 1920 * 1080 * 1.5;
-		DWORD dwBufSize2;
-
-		if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
+		frame_index_++;
+		if (0== param_.data_from && !path_loaded_)
 		{
-			cv::Mat rawData(1, dwBufSize2, CV_8UC1, (void*)pBuffer1);
-			cv::Mat decodedImage = cv::imdecode(rawData, 1);
-			if (decodedImage.data != NULL)
+			path_loaded_ = true;
+			FileOperation               file_opt;
+			std::string test_image_dir = "./test_image/camera" + std::to_string(getID());
+			file_opt.getFileNameList(test_image_dir, ".jpg", test_image_path_);
+		}
+
+		cv::Mat org_image;
+		// read image
+		if (0== param_.data_from)
+		{
+			if (frame_index_ >= test_image_path_.size()) return img;
+			std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + test_image_path_[frame_index_];
+			org_image = cv::imread(img_path);
+			img = org_image;
+		}
+		else
+		{
+			int64_t time = common::get_time_stamp();
+			LONG iCurChan = lRealPlayHandle_;
+			sprintf_s(PicName, ".\\image_log\\camera%d\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+
+			BYTE *pBuffer1 = new BYTE[3000 * 2000];
+			DWORD dwBufSize1 = 1920 * 1080 * 1.5;
+			DWORD dwBufSize2;
+
+			if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
 			{
-				img = decodedImage;
-				resize(img, img, Size(960, 540));
-				if (params.image_log_switch&&!params.data_collection_stage)
+				cv::Mat rawData(1, dwBufSize2, CV_8UC1, (void*)pBuffer1);
+				cv::Mat decodedImage = cv::imdecode(rawData, 1);
+				if (decodedImage.data != NULL)
 				{
-					imwrite(PicName, img);
+					img = decodedImage;
+					resize(img, img, Size(960, 540));
+					if (params.image_log_switch && !params.data_collection_stage)
+					{
+						imwrite(PicName, img);
+					}
+					else if (params.data_collection_stage)
+					{
+						imwrite(PicName, img);
+						waitKey(params.data_collection_interval);
+					}
 				}
-				else if (params.data_collection_stage)
-				{
-					imwrite(PicName, img);
-					waitKey(params.data_collection_interval);
-				}
-			}
-		};
-		delete[] pBuffer1;
+			};
+			delete[] pBuffer1;
+		}
 
 		return img;
 	}
