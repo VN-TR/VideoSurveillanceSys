@@ -17,6 +17,7 @@
 #include "HCNetSDK/HCNetSDK.h"
 #include "HCNetSDK/plaympeg4.h"
 #include "VideoSurveillanceSys/object_detection.h"
+#include <openpose/headers.hpp>
 #include <thread>
 using namespace cv;
 
@@ -201,12 +202,14 @@ namespace VisionMonitor
 			int							frame_index_;
 			Params						param_;
 			ObjectDetection				object_detection_;
+			
 			LONG						lUserID_;
 			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;
 			LONG						lRealPlayHandle_;
 			typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
 			HWND						hWnd_;
 			cv::Mat						image_;
+			cv::Mat						skeleton_image_;
 			cv::Mat						Title_image_;
 			cv::Mat						Inform_car_image_;
 			cv::Mat						Inform_human_image_;

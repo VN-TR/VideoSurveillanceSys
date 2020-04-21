@@ -18,8 +18,6 @@
 #include <assert.h>
 #include <opencv2/opencv.hpp>
 #include "VideoSurveillanceSys/timer.h"
-#include "VideoSurveillanceSys/skeleton_estimation.h"
-
 using namespace std;
 // CODE
 namespace VisionMonitor
@@ -27,10 +25,16 @@ namespace VisionMonitor
 	Camera::Camera():frame_index_(0) {}
 	Camera::~Camera() {}
 	
+	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
+
+
 	bool Camera::initialize(const Params &param)
 	{
 		param_ = param;
 		object_detection_.Init();
+		//skeleton_estimation_.init();
+		opWrapper.disableMultiThreading();
+		opWrapper.start();
 
 		Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
 		Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
@@ -88,6 +92,19 @@ namespace VisionMonitor
 		image_ = grabbingFrame(param_, pic_name);
 		if (image_.data != NULL)
 		{
+			if (frame_index_ % 100 == 0)
+			{
+				auto datumProcessed = opWrapper.emplaceAndPop(image_);
+				if (datumProcessed != nullptr)
+				{
+					auto s = datumProcessed->at(0)->poseScores.toString();
+					s.erase(s.find_last_not_of(" "));
+					skeleton_image_ = datumProcessed->at(0)->cvOutputData;
+
+				}
+			}
+			cout << frame_index_ << endl;
+			
 			AI_result_ = object_detection_.DL_Detector(image_);
 			if (AI_result_.size() != 0)
 			{
@@ -95,6 +112,7 @@ namespace VisionMonitor
 				AI_result_.clear();
 			}
 		}
+
 	}
 
 	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)
@@ -128,7 +146,6 @@ namespace VisionMonitor
 					frame_index_++;
 				}
 			}
-
 		};
 		delete[] pBuffer1;
 
@@ -208,7 +225,7 @@ namespace VisionMonitor
 
 	Mat Camera::getlastimage()
 	{
-		return image_;
+		return skeleton_image_;
 	}
 
 }
