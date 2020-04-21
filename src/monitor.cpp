@@ -81,6 +81,17 @@ namespace VisionMonitor
 				thread->join();
 				delete thread;
 			}
+			for (auto& camera : cameras_)
+			{
+				if (camera.getlastimage().data != NULL)
+				{
+					Mat frame = camera.getlastimage();
+					resize(frame, frame, Size(960, 540));
+					cv::imshow("both:camera" + std::to_string(camera.getID()), frame);
+					waitKey(1);
+					cout << frame.cols << endl;
+				}
+			}
 
 
 		}

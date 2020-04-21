@@ -181,6 +181,9 @@ namespace VisionMonitor
 		  */
 		void setDistortionCoeffs(cv::Mat &distortion_coeffs);
 
+		Mat getlastimage();
+		
+
 
 
 		private:
@@ -194,6 +197,8 @@ namespace VisionMonitor
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
 
 			//运行参数
+			std::vector<Saveditem>      AI_result_;
+
 			int							frame_index_;
 			Params						param_;
 			ObjectDetection				object_detection_;

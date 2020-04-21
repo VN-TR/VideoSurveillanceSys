@@ -85,6 +85,15 @@ namespace VisionMonitor
 	{
 		std::string pic_name;
 		image_ = grabbingFrame(param_, pic_name);
+		if (image_.data != NULL)
+		{
+			AI_result_ = object_detection_.DL_Detector(image_);
+			if (AI_result_.size() != 0)
+			{
+				image_ = AI_result_.back().itemImage;
+				AI_result_.clear();
+			}
+		}
 	}
 
 	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)
@@ -112,7 +121,7 @@ namespace VisionMonitor
 				{
 					if (frame_index_ % 10)
 					{
-						imwrite(PicName, img);
+						//imwrite(PicName, img);
 					}
 					
 					frame_index_++;
@@ -196,5 +205,9 @@ namespace VisionMonitor
 		distortion_coeffs.copyTo(distortion_coeffs_);
 	}
 
+	Mat Camera::getlastimage()
+	{
+		return image_;
+	}
 
 }
