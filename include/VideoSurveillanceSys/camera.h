@@ -215,6 +215,7 @@ namespace VisionMonitor
 			typedef HWND(WINAPI *PROCGETCONSOLEWINDOW)();
 			HWND						hWnd_;
 			cv::Mat						image_;
+			Mat display_image;
 			cv::Mat						skeleton_image_;
 			cv::Mat						Title_image_;
 			cv::Mat						Inform_car_image_;

@@ -40,9 +40,9 @@ namespace VisionMonitor
 		tfutil_.BuildSession();
 	}
 	
-	vector<Saveditem> ObjectDetection::DL_Detector(cv::Mat &image)
+	vector<Saveditem> ObjectDetection::DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output)
 	{
-		Mat frame = image;
+		Mat frame = img_input;
 		std::vector<unsigned char> input_data;
 		std::vector<TF_Tensor*> input_tensor;
 		std::vector<TF_Tensor*> output_tensor;
@@ -76,7 +76,7 @@ namespace VisionMonitor
 				goodindex++;
 		}
 
-		Mat img = image;
+		Mat img = draw;
 		for (int i = 0; i < goodindex; i++)
 		{
 			string label;
@@ -140,6 +140,7 @@ namespace VisionMonitor
 			}
 			itemInfomation_.push_back(Saveditem(img, label, tl.x, br.x, tl.y, br.y));
 		}
+		img_output = img;
 		return itemInfomation_;
 	}
 

@@ -113,7 +113,8 @@ namespace VisionMonitor
 				}
 				cout << frame_index_ << endl;
 
-				AI_result_ = object_detection_.DL_Detector(image_);
+				
+				AI_result_ = object_detection_.DL_Detector(image_,skeleton_image_,display_image);
 				if (AI_result_.size() != 0)
 				{
 					image_ = AI_result_.back().itemImage;
@@ -147,7 +148,7 @@ namespace VisionMonitor
 			if (decodedImage.data != NULL)
 			{
 				img = decodedImage;
-				resize(img, img, Size(img.cols, img.rows));
+				resize(img, img, Size(960, 540));
 				if (params.image_log_switch&&!params.data_collection_stage)
 				{
 					imwrite(PicName, img);
@@ -237,7 +238,7 @@ namespace VisionMonitor
 
 	Mat Camera::getlastimage()
 	{
-		return skeleton_image_;
+		return display_image;
 	}
 
 }
