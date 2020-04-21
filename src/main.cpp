@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <iostream>
-#include "Windows.h"
+//#include "Windows.h"
 //#include "HCNetSDK/HCNetSDK.h"
 //#include "HCNetSDK/plaympeg4.h"
 //#include <time.h>

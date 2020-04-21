@@ -35,7 +35,6 @@ target_link_libraries(${PROJECT_NAME}
    D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow.lib
    D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow_framework.lib
 E:/openpose/openpose-1.5.1/build/src/openpose/Release/openpose.lib
-E:/openpose/openpose-1.5.1/3rdparty/windows/opencv/x64/vc15/lib/opencv_world401.lib
 E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/gflags.lib
 E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/glog.lib
 E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffe.lib

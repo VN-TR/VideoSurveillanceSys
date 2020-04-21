@@ -18,7 +18,6 @@
 #include "HCNetSDK/plaympeg4.h"
 #include "VideoSurveillanceSys/object_detection.h"
 #include <thread>
-
 using namespace cv;
 
 

@@ -13,11 +13,12 @@
 #include "VideoSurveillanceSys/monitor.h"
 #include "VideoSurveillanceSys/file_operation.h"
 #include "VideoSurveillanceSys/common.h"
+
 #include <io.h>
 #include <assert.h>
-#include <windows.h>
 #include <opencv2/opencv.hpp>
 #include "VideoSurveillanceSys/timer.h"
+#include "VideoSurveillanceSys/skeleton_estimation.h"
 
 using namespace std;
 // CODE

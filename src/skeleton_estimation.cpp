@@ -32,8 +32,8 @@ namespace VisionMonitor
 		op::log("Configuring OpenPose...", op::Priority::High);
 
 		// Set to single-thread (for sequential processing and/or debugging and/or reducing latency)
-		if (FLAGS_disable_multi_thread)
-			opWrapper_.disableMultiThreading();
+	
+		opWrapper_.disableMultiThreading();
 
 		// Starting OpenPose
 		op::log("Starting thread(s)...", op::Priority::High);

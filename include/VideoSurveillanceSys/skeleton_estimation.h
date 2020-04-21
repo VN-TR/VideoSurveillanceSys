@@ -17,9 +17,7 @@
 // INCLUDE PART
 #include <stdio.h>
 #include <iostream>
-#include "Windows.h"
 #include <time.h>
-#include <openpose/flags.hpp>
 #include <openpose/headers.hpp>
 #include <regex>
 #include <numeric>
