@@ -39,6 +39,8 @@ namespace VisionMonitor
 		int dwStreamType = 0;						/*!< 0 - 主码流，1 - 子码流，2 - 码流3，3 - 码流4，以此类推 */
 		int dwLinkMode = 0;							/*!< 0 - TCP 方式，1 - UDP 方式，2 - 多播方式，3 - RTP 方式，4 - RTP / RTSP，5 - RSTP / HTTP */
 		int bBlocked = 0;							/*!< 0 - 非阻塞取流，1 - 阻塞取流 */
+		int image_input_width = 1920;				/*!< 输入图片宽度 */
+		int image_input_height = 1080;				/*!< 输入图片高度 */
 
 	};
 	/**

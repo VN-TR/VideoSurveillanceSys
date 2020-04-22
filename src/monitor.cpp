@@ -181,6 +181,8 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "dwStreamType", param_.dwStreamType);
 		parameValue<int>(parames_map, "int", "dwLinkMode", param_.dwLinkMode);
 		parameValue<int>(parames_map, "int", "bBlocked", param_.bBlocked);
+		parameValue<int>(parames_map, "int", "image_input_width", param_.image_input_width);
+		parameValue<int>(parames_map, "int", "image_input_height", param_.image_input_height);
 		delete params_doc;
 		delete cameras_doc;
 

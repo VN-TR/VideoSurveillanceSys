@@ -167,7 +167,7 @@ namespace VisionMonitor
 				if (decodedImage.data != NULL)
 				{
 					img = decodedImage;
-					resize(img, img, Size(960, 540));
+					resize(img, img, Size(param_.image_input_width, param_.image_input_height));
 					if (params.image_log_switch && !params.data_collection_stage)
 					{
 						imwrite(PicName, img);
