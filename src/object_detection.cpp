@@ -27,8 +27,8 @@ namespace VisionMonitor
 		INPUT_NODES_ = { "image_tensor" };
 		OUTPUT_NODES_ = { "detection_boxes", "detection_scores", "detection_classes", "num_detections" };
 		//_OUTPUT_NODES = {"num_detections" };
-		MODEL_NAME_ = "model/frozen_inference_graph.pb";
-		label_path_ = "model/labelmap.pbtxt";
+		MODEL_NAME_ = "models/object_detection/frozen_inference_graph.pb";
+		label_path_ = "models/object_detection/labelmap.pbtxt";
 		out_dims_ = { 1 };
 		tfutil_ = dnn_tensorflow();
 		std::vector<uint8_t> config = { 0x32,0xc,0x9,0x0,0x0, 0x0, 0x0, 0x0,0x0, 0xd0,0x3f,0x2a,0x1,0x30 };
