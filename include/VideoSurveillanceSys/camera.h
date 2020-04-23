@@ -41,6 +41,8 @@ namespace VisionMonitor
 		int bBlocked = 0;							/*!< 0 - 非阻塞取流，1 - 阻塞取流 */
 		int image_input_width = 1920;				/*!< 输入图片宽度 */
 		int image_input_height = 1080;				/*!< 输入图片高度 */
+		bool image_input_flip = false;				/*!< 输入图片反转 */
+		int image_input_flipcode = -1;				/*!< 输入图片反转类型 >0: 沿y-轴翻转, 0: 沿x-轴翻转, <0: x、y轴同时翻转*/
 
 	};
 	/**

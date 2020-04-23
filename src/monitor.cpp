@@ -183,6 +183,8 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "bBlocked", param_.bBlocked);
 		parameValue<int>(parames_map, "int", "image_input_width", param_.image_input_width);
 		parameValue<int>(parames_map, "int", "image_input_height", param_.image_input_height);
+		parameValue<bool>(parames_map, "bool", "image_input_flip", param_.image_input_flip);
+		parameValue<int>(parames_map, "int", "image_input_flipcode", param_.image_input_flipcode);
 		delete params_doc;
 		delete cameras_doc;
 
