@@ -43,7 +43,10 @@ namespace VisionMonitor
 		int image_input_height = 1080;				/*!< 输入图片高度 */
 		bool image_input_flip = false;				/*!< 输入图片反转 */
 		int image_input_flipcode = -1;				/*!< 输入图片反转类型 >0: 沿y-轴翻转, 0: 沿x-轴翻转, <0: x、y轴同时翻转*/
-
+		int image_output_width = 1920;				/*!< 显示图片宽度 */
+		int image_output_height = 1080;				/*!< 显示图片高度 */
+		int skeleton_desample_rate = 4;				/*!< 骨骼识别降采样率 */
+		int object_detect_desample_rate = 2;		/*!< 物体检测降采样率 */
 	};
 	/**
 	 * @brief 相机类

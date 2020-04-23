@@ -88,7 +88,7 @@ namespace VisionMonitor
 				if (camera.getlastimage().data != NULL)
 				{
 					Mat frame = camera.getlastimage();
-					resize(frame, frame, Size(960, 540));
+					resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
 					cv::imshow("both:camera" + std::to_string(camera.getID()), frame);
 					waitKey(1);
 					cout << frame.cols << endl;
@@ -185,6 +185,10 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "image_input_height", param_.image_input_height);
 		parameValue<bool>(parames_map, "bool", "image_input_flip", param_.image_input_flip);
 		parameValue<int>(parames_map, "int", "image_input_flipcode", param_.image_input_flipcode);
+		parameValue<int>(parames_map, "int", "image_output_width", param_.image_output_width);
+		parameValue<int>(parames_map, "int", "image_output_height", param_.image_output_height);
+		parameValue<int>(parames_map, "int", "skeleton_desample_rate", param_.skeleton_desample_rate);
+		parameValue<int>(parames_map, "int", "object_detect_desample_rate", param_.object_detect_desample_rate);
 		delete params_doc;
 		delete cameras_doc;
 
