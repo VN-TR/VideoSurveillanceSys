@@ -26,7 +26,7 @@ namespace VisionMonitor
 * @brief 监测模块所需要的参数
 */
 
-	class Monitor
+	class SURVEILLANCE_API Monitor
 	{
 	public:
 		Monitor();

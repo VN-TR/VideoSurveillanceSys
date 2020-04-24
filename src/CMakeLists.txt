@@ -2,29 +2,34 @@
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 # 设置：Windows 动态库模式下导出接口，参看 VnPkgGuide/vn_predef.hh 文件
 if(MSVC)
-  add_definitions(-DEXE_EXPORT)
+  #add_definitions(-DEXE_EXPORT)
   add_definitions(-D_WINDOWS)
   add_definitions(-DUSE_CAFFE)
   add_definitions(-DUSE_CUDA)
-  add_definitions(-CMAKE_INTDIR="Release")
+  #add_definitions(-CMAKE_INTDIR="Release")
 endif()
 
 # 获取库的源文件列表
 file(GLOB_RECURSE ALL_SOURCES 
   ${CMAKE_CURRENT_SOURCE_DIR}/*.c*)
 # 如果只想使用特定文件夹下的源文件，或者特定文件，命令如下：
-# file(GLOB SOME_SOURCES 
-#   ${CMAKE_CURRENT_SOURCE_DIR}/core/*.c*          # 特定文件夹
-#   ${CMAKE_CURRENT_SOURCE_DIR}/cv/vn_cv_utils.cc  # 特定文件
-# )
-# message("Some sources ${SOME_SOURCES}")
 
+  
 # 获取库的头文件列表
 file(GLOB_RECURSE ALL_HEADERS 
   ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/*.h*)
 
+
+include(generate_product_version)
+
+generate_product_version(${PROJECT_NAME}ProductVersionFiles
+  NAME ${PROJECT_NAME}
+  VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
+  VERSION_MINOR ${PROJECT_VERSION_MINOR}
+  VERSION_PATCH ${PROJECT_VERSION_PATCH}
+  COMPANY_NAME "VisionNav Robotics")
 # 添加库
-add_library(${PROJECT_NAME} ${ALL_SOURCES} ${ALL_HEADERS})
+add_library(${PROJECT_NAME} ${ALL_SOURCES} ${ALL_HEADERS} ${${PROJECT_NAME}ProductVersionFiles})
 target_link_libraries(${PROJECT_NAME}
   ${OpenCV_LIBRARIES}
   ${VnUtils_LIBS}
@@ -34,11 +39,11 @@ target_link_libraries(${PROJECT_NAME}
    D:/videorepo/libs/HCNetSDK/PlayCtrl.lib
    D:/Tensorflow/GPU1.14/libtensorflow/lib/tensorflow.lib
    D:/Tensorflow/GPU1.14/libtensorflow/lib/tensorflow_framework.lib
-E:/openpose/openpose-1.5.1/build/src/openpose/Release/openpose.lib
-E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/gflags.lib
-E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/glog.lib
-E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffe.lib
-E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffeproto.lib
+   E:/openpose/openpose-1.5.1/build/src/openpose/Release/openpose.lib
+   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/gflags.lib
+   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/glog.lib
+   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffe.lib
+   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/lib/caffeproto.lib
   )
 
 # 给头文件和源文件分组，方便在Visual Studio里查看
@@ -105,3 +110,5 @@ set(${PROJECT_NAME}_LIBRARY \$\{${PROJECT_NAME}_LIBRARIES\})
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config-var.cmake
   DESTINATION lib/cmake/${PROJECT_NAME}
   )
+  
+

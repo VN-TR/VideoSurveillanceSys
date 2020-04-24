@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.1)
 
 # 指定库名和版本号
 project(VideoSurveillanceSys
-  VERSION 0.0.1
+  VERSION 1.1.1
   )
 
 # 使用现代 C++（C++ 11及以上）
 set(CMAKE_CXX_STANDARD 14)
+
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # 第三方依赖库
 find_package(OpenCV REQUIRED)
