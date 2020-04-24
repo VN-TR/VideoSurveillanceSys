@@ -195,11 +195,44 @@ namespace VisionMonitor
 		void setDistortionCoeffs(cv::Mat &distortion_coeffs);
 
 		Mat getlastimage();
+
+		//	//	/*!
+//	//	* @ brief  
+//	//	* @ author ybc
+//	//	* @ date   2020年4月19日
+//	//	* @ return     std::vector<float>  获取骨骼坐标
+//	//	* @ note
+//	//	*/
+//	//	vector<float> getSkeletonPoint();
+//
+//	//	/*!
+//	//	* @ brief  
+//	//	* @ author ybc
+//	//	* @ date   2020年4月19日
+//	//	* @ return     int  获取识别到人的个数
+//	//	* @ note
+//	//	*/
+//	//	int getPeopleCount();
 		
 
 
 
 		private:
+
+
+			void skeleton_estimation(const Mat input_image);
+
+			/*!
+			* @ brief  绘制骨骼识别图
+			* @ author ybc
+			* @ date   2020年4月24日
+			* @ param[in]  const Mat input_image
+			* @ param[out] Mat & output_image 
+			* @ return     cv::Mat  
+			* @ note
+			*/
+			Mat draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint);
+
 			//相机参数
 			int							id_;						/*! <编号 */
 			int							port_;						/*! <端口号 */
@@ -220,7 +253,9 @@ namespace VisionMonitor
 			int							frame_index_;
 			Params						param_;
 			ObjectDetection				object_detection_;
-			
+			vector<float>				skeleton_point_;
+			int							skeleton_people_count_;
+
 			LONG						lUserID_;
 			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;
 			LONG						lRealPlayHandle_;

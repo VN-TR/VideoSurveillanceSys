@@ -103,23 +103,18 @@ namespace VisionMonitor
 		{
 			if (image_.data != NULL)
 			{
-				auto datumProcessed = opWrapper.emplaceAndPop(image_);
-				if (datumProcessed != nullptr)
-				{
-					auto s = datumProcessed->at(0)->poseScores.toString();
-					s.erase(s.find_last_not_of(" "));
-					skeleton_image_ = datumProcessed->at(0)->cvOutputData;
-
-				}
+				skeleton_estimation(image_);
 				cout << frame_index_ << endl;
 
 				
-				AI_result_ = object_detection_.DL_Detector(image_,skeleton_image_,display_image);
+				AI_result_.clear();
+				AI_result_ = object_detection_.DL_Detector(image_, skeleton_image_, display_image);
 				if (AI_result_.size() != 0)
 				{
 					image_ = AI_result_.back().itemImage;
 					AI_result_.clear();
 				}
+				
 			}
 		}
 
@@ -178,7 +173,11 @@ namespace VisionMonitor
 					}
 					else if (params.data_collection_stage)
 					{
+						string cameraid = to_string(id_);
+						imshow(cameraid, img);
 						imwrite(PicName, img);
+						
+						
 						waitKey(params.data_collection_interval);
 					}
 				}
@@ -264,5 +263,44 @@ namespace VisionMonitor
 	{
 		return display_image;
 	}
+
+
+	void Camera::skeleton_estimation(const Mat input_image)
+	{
+		Mat skeleton_input_image = input_image;
+		auto datumProcessed = opWrapper.emplaceAndPop(skeleton_input_image);
+		if (datumProcessed != nullptr)
+		{
+			auto s = datumProcessed->at(0)->poseScores.toString();
+			s.erase(s.find_last_not_of(" "));
+
+			int peopleCount = datumProcessed->at(0)->poseKeypoints.getSize(0);
+			skeleton_people_count_ = peopleCount;
+			skeleton_point_.clear();
+			skeleton_point_.resize(peopleCount * 75);
+			for (int i = 0; i < peopleCount * 75; i++)
+			{
+				skeleton_point_[i] = datumProcessed->at(0)->poseKeypoints[i];
+			}
+			skeleton_image_ = draw_skeleton_image(image_,skeleton_point_);
+
+
+		}
+	}
+
+
+	Mat Camera::draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint)
+	{
+		Mat outputimage = input_image;
+
+		for (int i = 0; i < skeleton_point_.size(); i += 3)
+		{
+			Point pt((int)skeleton_point_[i], (int)skeleton_point_[i + 1]);
+			circle(outputimage, pt, 6, Scalar(255, 0, 0), -1);
+		}
+		return outputimage;		
+	}
+
+
 
 }

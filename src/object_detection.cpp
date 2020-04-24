@@ -64,6 +64,11 @@ namespace VisionMonitor
 
 		auto data = tfutil_.GetTensorsData<float>(output_tensor);
 
+		tfutil_.DeleteTensor(input_tensor);
+		tfutil_.DeleteTensor(output_tensor);
+		input_data.clear();
+		itemInfomation_.clear();
+
 		vector<float> boxes = data[0];
 		vector<float> scores = data[1];
 		vector<float> classes = data[2];
@@ -141,6 +146,9 @@ namespace VisionMonitor
 			itemInfomation_.push_back(Saveditem(img, label, tl.x, br.x, tl.y, br.y));
 		}
 		img_output = img;
+		boxes.clear();
+		scores.clear();
+		classes.clear();
 		return itemInfomation_;
 	}
 
