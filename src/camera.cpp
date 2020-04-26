@@ -22,7 +22,7 @@ using namespace std;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera():frame_index_(0) {}
+	Camera::Camera():frame_index_(0),path_loaded_(0) {}
 	Camera::~Camera() {}
 	
 	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
@@ -96,30 +96,42 @@ namespace VisionMonitor
 
 	void Camera::monitorThread()
 	{
-	
+
 		std::string pic_name;
 		image_ = grabbingFrame(param_, pic_name);
+
 		if (!param_.data_collection_stage)
 		{
 			if (image_.data != NULL)
 			{
-				skeleton_estimation(image_);
-				cout << frame_index_ << endl;
+				if (frame_index_ < 2)
+					skeleton_estimation(image_);
+				bool havehuman = false;
 
-				display_image = skeleton_image_;
-				//AI_result_.clear();
-				//AI_result_ = object_detection_.DL_Detector(image_, skeleton_image_, display_image);
-				//if (AI_result_.size() != 0)
-				//{
-				//	image_ = AI_result_.back().itemImage;
-				//	AI_result_.clear();
-				//}
-				
+				AI_result_.clear();
+				AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
+
+				if (AI_result_.size() != 0)
+				{
+					for (auto res : AI_result_)
+					{
+						if (res.itemClass == "Human")
+						{
+							havehuman = true;
+						}
+					}
+					AI_result_.clear();
+				}
+				if (havehuman == true)
+				{
+					skeleton_estimation(image_);
+					skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
+					display_image = skeleton_image_;
+				}
+
+
 			}
 		}
-
-		
-
 	}
 
 	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)
@@ -133,9 +145,12 @@ namespace VisionMonitor
 			path_loaded_ = true;
 			FileOperation               file_opt;
 			std::string test_image_dir = "./test_image/camera" + std::to_string(getID());
+			cout << test_image_dir << endl;
 			file_opt.getFileNameList(test_image_dir, ".jpg", test_image_path_);
 		}
+		
 
+		
 		cv::Mat org_image;
 		// read image
 		if (0== param_.data_from)
@@ -285,7 +300,7 @@ namespace VisionMonitor
 			{
 				skeleton_point_[i] = datumProcessed->at(0)->poseKeypoints[i];
 			}
-			skeleton_image_ = draw_skeleton_image(image_,skeleton_point_);
+			//skeleton_image_ = draw_skeleton_image(image_,skeleton_point_);
 
 
 		}
