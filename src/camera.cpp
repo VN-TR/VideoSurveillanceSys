@@ -22,7 +22,7 @@ using namespace std;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera():frame_index_(0),path_loaded_(0) {}
+	Camera::Camera() :frame_index_(0), path_loaded_(0), complete_ob_(false) {}
 	Camera::~Camera() {}
 	
 	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
@@ -99,12 +99,16 @@ namespace VisionMonitor
 
 		std::string pic_name;
 		image_ = grabbingFrame(param_, pic_name);
+		
 
 		if (!param_.data_collection_stage)
 		{
 			if (image_.data != NULL)
 			{
-				if (frame_index_ < 2)
+				Mat distortimg;
+				cv::undistort(image_, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
+				image_ = distortimg;
+				if (complete_ob_ == false)
 					skeleton_estimation(image_);
 				bool havehuman = false;
 
@@ -113,6 +117,7 @@ namespace VisionMonitor
 
 				if (AI_result_.size() != 0)
 				{
+					complete_ob_ = true;
 					for (auto res : AI_result_)
 					{
 						if (res.itemClass == "Human")
@@ -128,7 +133,12 @@ namespace VisionMonitor
 					skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
 					display_image = skeleton_image_;
 				}
-
+				//int64_t time = common::get_time_stamp();
+				//LONG iCurChan = lRealPlayHandle_;
+				//char PicName[256] = { 0 };
+				//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+				//imwrite(PicName, image_);
+				//waitKey(1000);
 
 			}
 		}

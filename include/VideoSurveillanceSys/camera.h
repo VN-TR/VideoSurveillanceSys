@@ -245,7 +245,7 @@ namespace VisionMonitor
 			//运行参数
 			std::vector<Saveditem>      AI_result_;
 
-
+			bool						complete_ob_;
 
 			bool                        path_loaded_;
 			std::vector<std::string>    test_image_path_;
