@@ -44,6 +44,7 @@ namespace VisionMonitor
 			Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
 			Inform_human_image_ = cv::imread("./inform_image/3.png", CV_LOAD_IMAGE_UNCHANGED);
 			Inform_good_image_ = cv::imread("./inform_image/4.png", CV_LOAD_IMAGE_UNCHANGED);
+			map_image_ = cv::imread("./inform_image/5.png", CV_LOAD_IMAGE_UNCHANGED);
 		}
 		//如果是图片采集阶段或运行阶段使用实时数据时,初始化相机硬件
 		if (param_.data_collection_stage == true || param_.data_from)
@@ -108,37 +109,83 @@ namespace VisionMonitor
 				Mat distortimg;
 				cv::undistort(image_, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				image_ = distortimg;
-				//if (complete_ob_ == false)
-				//	skeleton_estimation(image_);
-				//bool havehuman = false;
+				if (complete_ob_ == false)
+					skeleton_estimation(image_);
+				bool havehuman = false;
 
-				//AI_result_.clear();
-				//AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
+				AI_result_.clear();
+				AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
 
-				//if (AI_result_.size() != 0)
-				//{
-				//	complete_ob_ = true;
-				//	for (auto res : AI_result_)
-				//	{
-				//		if (res.itemClass == "Human")
-				//		{
-				//			havehuman = true;
-				//		}
-				//	}
-				//	AI_result_.clear();
-				//}
-				//if (havehuman == true)
-				//{
-				//	skeleton_estimation(image_);
-				//	skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
-				//	display_image = skeleton_image_;
-				//}
-				int64_t time = common::get_time_stamp();
-				LONG iCurChan = lRealPlayHandle_;
-				char PicName[256] = { 0 };
-				sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
-				imwrite(PicName, image_);
-				waitKey(1000);
+				if (AI_result_.size() != 0)
+				{
+					complete_ob_ = true;
+					for (auto res : AI_result_)
+					{
+						if (res.itemClass == "Human")
+						{
+							havehuman = true;
+						}
+					}
+				}
+				if (havehuman == true)
+				{
+					skeleton_estimation(image_);
+					skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
+					display_image = skeleton_image_;
+				}
+
+
+				cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
+				InsertLogo(display_image, Title_image_, 0, 0);
+				InsertLogo(display_image, map_image_, 40, 1445);
+				if (AI_result_.size() != 0)
+				{
+
+					for (auto res : AI_result_)
+					{
+						float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+						float vb = res.itemSite_Y2;
+
+						float A = -0.036;
+						float B = 9.9;
+						float C = 2.45;
+						float D = -14.972;
+
+						float kx, ky;
+						kx = (va - 935.5) / 1164;
+						ky = (vb - 517.8) / 1164;
+						float z = -(D) / (A*kx + B * ky + C);
+						float x = kx * z;
+
+						Point camera_pt(1682, 40);
+						Point pts;
+						if (abs(x) < 10 && abs(z) < 20)
+						{
+							pts.x = 1682 + x * 23;
+							pts.y = 40 + 475 - z * 23;
+							if (res.itemClass == "Human")
+							{
+								circle(display_image, pts, 6, Scalar(0, 0, 255), -1);
+							}
+							if (res.itemClass == "Forklift")
+							{
+								circle(display_image, pts, 10, Scalar(0, 255, 0), -1);
+							}
+						}
+
+					}
+				}
+
+
+
+				//waitKey(2000);
+
+				//int64_t time = common::get_time_stamp();
+				//LONG iCurChan = lRealPlayHandle_;
+				//char PicName[256] = { 0 };
+				//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+				//imwrite(PicName, image_);
+				//waitKey(1000);
 
 			}
 		}
@@ -289,6 +336,10 @@ namespace VisionMonitor
 		return display_image;
 	}
 
+	void Camera::drawMap(Mat &inputmat)
+	{
+
+	}
 
 	void Camera::skeleton_estimation(const Mat input_image)
 	{
@@ -565,12 +616,29 @@ namespace VisionMonitor
 			cout << "画图时间" << mytime.toc() << endl;
 
 		}
-
-
-
 		return outputimage;		
 	}
 
+
+	void Camera::InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart)
+	{
+		image_ = image;
+
+		//image_.convertTo(image_, Title_image.type());
+
+		for (int i = rowStart; i < logoImage.rows + rowStart && i < image_.rows; i++)
+			for (int j = colStart; j < logoImage.cols + colStart && j < image_.cols; j++)
+			{
+
+				float ratio = float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[3]) / 255.f;
+				for (int ii = 0; ii < 3; ii++)
+				{
+					image_.at<Vec4b>(i, j)[ii] = uchar(float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[ii]) * ratio
+						+ float(image_.at<Vec4b>(i, j)[ii]) * (1.f - ratio));
+				}
+
+			}
+	}
 
 
 }

@@ -82,6 +82,9 @@ namespace VisionMonitor
 
 		std::thread* Camera::startMonitor();
 
+		void drawMap(Mat &inputmat);
+
+		void InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
 		void Camera::monitorThread();
 
@@ -268,6 +271,7 @@ namespace VisionMonitor
 			cv::Mat						Inform_car_image_;
 			cv::Mat						Inform_human_image_;
 			cv::Mat						Inform_good_image_;
+			cv::Mat						map_image_;
 
 	}; // end class camera
 
