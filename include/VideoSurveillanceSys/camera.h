@@ -88,10 +88,11 @@ namespace VisionMonitor
 
 
 		std::thread* grabMonitor();
-
-
 		void grabThread();
 	
+		std::thread* skeletonMonitor();
+
+		void skeletonThread();
 
 		void Camera::monitorThread();
 
@@ -279,7 +280,7 @@ namespace VisionMonitor
 			cv::Mat						Inform_human_image_;
 			cv::Mat						Inform_good_image_;
 			cv::Mat						map_image_;
-			std::list<Mat>		    msgRecvQueueMat;
+			std::list<Mat>		        msgRecvQueueMat;
 			std::mutex					image_mutex_;
 	}; // end class camera
 

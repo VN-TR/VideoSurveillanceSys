@@ -73,10 +73,15 @@ namespace VisionMonitor
 			std::vector<std::thread*> threads;
 			for (auto camera : cameras_)
 			{
-				auto thread1 = camera->grabMonitor();
+				auto thread1 = camera->grabMonitor();				
 				auto thread = camera->startMonitor();
+				waitKey(10000);
+				auto thread2 = camera->skeletonMonitor();
+
+				
 				threads.push_back(thread1);
 				threads.push_back(thread);
+				threads.push_back(thread2);
 			}
 
 			for (auto thread : threads)

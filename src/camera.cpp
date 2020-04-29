@@ -35,10 +35,10 @@ namespace VisionMonitor
 		//如果是不是图片采集阶段（运行阶段）则初始化物体检测和骨骼检测
 		if (param_.data_collection_stage == false)
 		{
-			object_detection_.Init();
-			//skeleton_estimation_.init();
-			opWrapper.disableMultiThreading();
 			opWrapper.start();
+			//skeleton_estimation_.init();
+			//opWrapper.disableMultiThreading();
+			
 
 			Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
 			Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
@@ -86,13 +86,8 @@ namespace VisionMonitor
 		return true;
 	}
 
-
 	std::thread* Camera::grabMonitor()
 	{
-		//if (path_loaded_ && frame_index_ >= test_image_path_.size())
-		//{
-		//	return nullptr;
-		//}
 		return new std::thread(&Camera::grabThread, this);
 	}
 
@@ -100,33 +95,72 @@ namespace VisionMonitor
 	{
 		while (true)
 		{
+			Timer my;
+			my.tic();
 			std::string pic_name;
 			Mat grabimg = grabbingFrame(param_, pic_name);
-			imshow("1", grabimg);
-			waitKey(2000);
+			if (grabimg.data != NULL)
 			{
-				std::lock_guard<std::mutex> locker_image(image_mutex_);
-				msgRecvQueueMat.push_back(grabimg);
-				cout << grabimg.cols << endl;
-				if (msgRecvQueueMat.size() > 2)
+				Mat distortimg;
+				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
+				grabimg = distortimg;
+				//imshow("1", grabimg);
+				//waitKey(1);
 				{
-					msgRecvQueueMat.pop_front();
+					std::lock_guard<std::mutex> locker_image(image_mutex_);
+					msgRecvQueueMat.push_back(grabimg);
+					cout << grabimg.cols << endl;
+					if (msgRecvQueueMat.size() > 2)
+					{
+						msgRecvQueueMat.pop_front();
+					}
 				}
 			}
+			
+			cout << "抓图时间" << my.toc() << endl;
 		}
 	}
 
+	std::thread* Camera::skeletonMonitor()
+	{
+		return new std::thread(&Camera::skeletonThread, this);
+	}
+
+	void Camera::skeletonThread()
+	{
+
+		while (true)
+		{
+			{
+				std::lock_guard<std::mutex> locker_image(image_mutex_);
+
+				if (!msgRecvQueueMat.empty())
+				{
+					image_ = msgRecvQueueMat.back();
+				}
+			}
+			if (image_.data != NULL)
+			{
+				Timer caltime1;
+				caltime1.tic();
+				skeleton_estimation(image_);
+				cout << "骨骼计算时间" << caltime1.toc() << endl;
+				/*skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
+				display_image = skeleton_image_;*/
+			}
+
+		}
+	}
+
+
 	std::thread* Camera::startMonitor()
 	{
-		//if (path_loaded_ && frame_index_ >= test_image_path_.size())
-		//{
-		//	return nullptr;
-		//}
 		return new std::thread(&Camera::monitorThread, this);
 	}
 
 	void Camera::monitorThread()
 	{
+		object_detection_.Init();
 		while (true)
 		{
 			{
@@ -138,21 +172,18 @@ namespace VisionMonitor
 				}
 			}
 
-
-			if (!param_.data_collection_stage)
-			{
 				if (image_.data != NULL)
 				{
-					Mat distortimg;
-					cv::undistort(image_, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
-					image_ = distortimg;
+					Timer caltime;
+					caltime.tic();
+
 					if (complete_ob_ == false)
 						skeleton_estimation(image_);
 					bool havehuman = false;
 
 					AI_result_.clear();
 					AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
-
+					cout << "计算时间" << caltime.toc() << endl;
 					if (AI_result_.size() != 0)
 					{
 						complete_ob_ = true;
@@ -164,12 +195,7 @@ namespace VisionMonitor
 							}
 						}
 					}
-					if (havehuman == true)
-					{
-						skeleton_estimation(image_);
-						skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
-						display_image = skeleton_image_;
-					}
+
 
 
 					cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
@@ -213,10 +239,11 @@ namespace VisionMonitor
 						}
 					}
 
-				Mat frame = getlastimage();
-				resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
-				cv::imshow("both:camera" + std::to_string(getID()), frame);
-				waitKey(1);
+				//Mat frame = getlastimage();
+				//resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
+				//cv::imshow("both:camera" + std::to_string(getID()), frame);
+				//waitKey(1);
+				
 
 					//waitKey(2000);
 
@@ -229,8 +256,6 @@ namespace VisionMonitor
 
 				}
 
-
-			}
 		}
 
 	}
