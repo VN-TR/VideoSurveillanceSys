@@ -79,24 +79,90 @@ namespace VisionMonitor
 		*/
 		bool HKinit(const Params &param);
 
+		/*!
+		* @ brief  抓图
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     std::thread*  
+		* @ note
+		*/
+		std::thread* startGrab();
 
-		std::thread* Camera::startMonitor();
+
+		/*!
+		* @ brief  物体检测
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     std::thread*  
+		* @ note
+		*/
+		std::thread* startObjectDetection();
+
+		/*!
+		* @ brief  骨骼识别
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     std::thread*  
+		* @ note
+		*/
+		std::thread* startSkeleton();
+
+		/*!
+		* @ brief  显示
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     std::thread*  
+		* @ note
+		*/
+		std::thread* startDisplay();
+
+		/*!
+		* @ brief  抓图线程
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     void  
+		* @ note
+		*/
+		void grabThread();
+
+		/*!
+		* @ brief  物体检测线程
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     void  
+		* @ note
+		*/
+		void objectDetectionThread();
+
+		/*!
+		* @ brief  骨骼识别线程
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     void  
+		* @ note
+		*/
+		void skeletonThread();
+
+
+
 
 		void drawMap(Mat &inputmat);
 
 		void InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
 
-		std::thread* grabMonitor();
-		void grabThread();
-	
-		std::thread* skeletonMonitor();
+		
 
-		void skeletonThread();
-
-		void Camera::monitorThread();
-
-		cv::Mat Camera::grabbingFrame(Params &params, std::string &img_name);
+		/*!
+		* @ brief  拍一张图片
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ param[in]  Params & params	参数表
+		* @ param[in]  std::string & img_name	图片名
+		* @ return     cv::Mat  输出抓到的图片
+		* @ note	将流中的图片拍出来
+		*/
+		cv::Mat grabbingFrame(Params &params, std::string &img_name);
 
 		/**
 		* @brief 设置设备编号
@@ -207,30 +273,17 @@ namespace VisionMonitor
 
 		Mat getlastimage();
 
-		//	//	/*!
-//	//	* @ brief  
-//	//	* @ author ybc
-//	//	* @ date   2020年4月19日
-//	//	* @ return     std::vector<float>  获取骨骼坐标
-//	//	* @ note
-//	//	*/
-//	//	vector<float> getSkeletonPoint();
-//
-//	//	/*!
-//	//	* @ brief  
-//	//	* @ author ybc
-//	//	* @ date   2020年4月19日
-//	//	* @ return     int  获取识别到人的个数
-//	//	* @ note
-//	//	*/
-//	//	int getPeopleCount();
-		
-
-
 
 		private:
 
-
+			/*!
+			* @ brief  对人体骨骼进行评估
+			* @ author ybc
+			* @ date   2020年4月29日
+			* @ param[in]  const Mat input_image
+			* @ return     void  
+			* @ note	基于caffe，在GPU下运算。但是由于openpose特性，使得计算时，暂停其他线程。
+			*/
 			void skeleton_estimation(const Mat input_image);
 
 			/*!
@@ -244,6 +297,11 @@ namespace VisionMonitor
 			*/
 			Mat draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint);
 
+
+
+
+
+
 			//相机参数
 			int							id_;						/*! <编号 */
 			int							port_;						/*! <端口号 */
@@ -252,36 +310,51 @@ namespace VisionMonitor
 			std::string					pwd_;						/*! <密码 */
 			cv::Mat						intrinsic_matrix_;			/*! <摄像头内部参数 */
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
+			
+			//相机运行
+			LONG						lUserID_;					/*! <编号 */
+			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;			/*! <设备信息 */
+			LONG						lRealPlayHandle_;			/*! <播放句柄 */
+			HWND						hWnd_;						/*! <句柄 */
+
+			//时间计算
+			Timer						grab_time_;					/*! <抓图时间 */
+			Timer						detect_time_;				/*! <物体检测时间 */
+			Timer						skeleton_time_;				/*! <骨骼检测时间 */
+			Timer						display_time_;				/*! <图片显示时间 */
+
+			//检测相关
+			ObjectDetection				object_detection_;			/*! <物体检测对象 */
+			std::vector<Saveditem>      AI_result_;					/*! <物体检测结果 */
+			std::vector<float>			skeleton_point_;			/*! <骨骼检测结果 */
+			int							skeleton_people_count_;		/*! <骨骼检测人数 */
+
+
+			//配置参数
+			Params						param_;						/*! <配置参数表 */
+			std::vector<std::string>    test_image_path_;			/*! <离线数据位置 */
+
+			//标志位
+			bool                        path_loaded_;
+
 
 			//运行参数
-			std::vector<Saveditem>      AI_result_;
+			int							frame_index_;				/*! <帧数 */
+			cv::Mat						image_;						/*! <处理图像 */
+			cv::Mat						display_image;				/*! <显示图像 */
+			cv::Mat						skeleton_image_;			/*! <骨骼图像 */
+			cv::Mat						Title_image_;				/*! <标签图像 */
+			cv::Mat						Inform_car_image_;			/*! <标签图像 */
+			cv::Mat						Inform_human_image_;		/*! <标签图像 */
+			cv::Mat						Inform_good_image_;			/*! <标签图像 */
+			cv::Mat						map_image_;					/*! <地图 */
 
-			bool						complete_ob_;
-
-			bool                        path_loaded_;
-			std::vector<std::string>    test_image_path_;
-
-			int							frame_index_;
-			Params						param_;
-			ObjectDetection				object_detection_;
-			vector<float>				skeleton_point_;
-			int							skeleton_people_count_;
-
-			LONG						lUserID_;
-			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;
-			LONG						lRealPlayHandle_;
-			
-			HWND						hWnd_;
-			cv::Mat						image_;
-			Mat display_image;
-			cv::Mat						skeleton_image_;
-			cv::Mat						Title_image_;
-			cv::Mat						Inform_car_image_;
-			cv::Mat						Inform_human_image_;
-			cv::Mat						Inform_good_image_;
-			cv::Mat						map_image_;
+			//线程处理
 			std::list<Mat>		        msgRecvQueueMat;
 			std::mutex					image_mutex_;
+
+
+
 	}; // end class camera
 
 } // end namespace VisionMonitor

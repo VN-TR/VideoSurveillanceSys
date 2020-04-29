@@ -66,17 +66,12 @@ namespace VisionMonitor
 	void Monitor::monitorThread()
 	{
 
-		
-			Timer mytime;
-			mytime.tic();
-
 			std::vector<std::thread*> threads;
 			for (auto camera : cameras_)
 			{
-				auto thread1 = camera->grabMonitor();				
-				auto thread = camera->startMonitor();
-				waitKey(10000);
-				auto thread2 = camera->skeletonMonitor();
+				auto thread1 = camera->startGrab();				
+				auto thread = camera->startObjectDetection();
+				auto thread2 = camera->startSkeleton();
 
 				
 				threads.push_back(thread1);
@@ -89,18 +84,7 @@ namespace VisionMonitor
 				thread->join();
 				delete thread;
 			}
-			//for (auto& camera : cameras_)
-			//{
-			//	if (camera.getlastimage().data != NULL)
-			//	{
-			//		Mat frame = camera.getlastimage();
-			//		resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
-			//		cv::imshow("both:camera" + std::to_string(camera.getID()), frame);
-			//		waitKey(1);
-			//		cout << frame.cols << endl;
-			//	}
-			//}
-			cout << "total time" << mytime.toc() << endl;
+
 
 
 	}

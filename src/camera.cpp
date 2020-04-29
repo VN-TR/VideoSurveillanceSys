@@ -22,7 +22,7 @@ using namespace std;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera() :frame_index_(0), path_loaded_(0), complete_ob_(false) {}
+	Camera::Camera() :frame_index_(0), path_loaded_(0){}
 	Camera::~Camera() {}
 	
 	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
@@ -86,7 +86,7 @@ namespace VisionMonitor
 		return true;
 	}
 
-	std::thread* Camera::grabMonitor()
+	std::thread* Camera::startGrab()
 	{
 		return new std::thread(&Camera::grabThread, this);
 	}
@@ -95,8 +95,7 @@ namespace VisionMonitor
 	{
 		while (true)
 		{
-			Timer my;
-			my.tic();
+			grab_time_.tic();
 			std::string pic_name;
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
@@ -104,24 +103,21 @@ namespace VisionMonitor
 				Mat distortimg;
 				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				grabimg = distortimg;
-				//imshow("1", grabimg);
-				//waitKey(1);
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat.push_back(grabimg);
-					cout << grabimg.cols << endl;
 					if (msgRecvQueueMat.size() > 2)
 					{
 						msgRecvQueueMat.pop_front();
 					}
 				}
+				
+				cout << "camera "<<getID()<< " 抓图时间: " << grab_time_.toc() << "ms"<< endl;
 			}
-			
-			cout << "抓图时间" << my.toc() << endl;
 		}
 	}
 
-	std::thread* Camera::skeletonMonitor()
+	std::thread* Camera::startSkeleton()
 	{
 		return new std::thread(&Camera::skeletonThread, this);
 	}
@@ -131,76 +127,59 @@ namespace VisionMonitor
 
 		while (true)
 		{
+			Mat skeleton_input_img;
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
 
 				if (!msgRecvQueueMat.empty())
 				{
-					image_ = msgRecvQueueMat.back();
+					skeleton_input_img = msgRecvQueueMat.back();
 				}
 			}
-			if (image_.data != NULL)
+			if (skeleton_input_img.data != NULL)
 			{
-				Timer caltime1;
-				caltime1.tic();
-				skeleton_estimation(image_);
-				cout << "骨骼计算时间" << caltime1.toc() << endl;
-				/*skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
-				display_image = skeleton_image_;*/
+				skeleton_time_.tic();
+				skeleton_estimation(skeleton_input_img);
+				cout << "camera " << getID() << " 骨骼计算时间: " << skeleton_time_.toc() << "ms" << endl;
 			}
-
 		}
 	}
 
 
-	std::thread* Camera::startMonitor()
+	std::thread* Camera::startObjectDetection()
 	{
-		return new std::thread(&Camera::monitorThread, this);
+		return new std::thread(&Camera::objectDetectionThread, this);
 	}
 
-	void Camera::monitorThread()
+	void Camera::objectDetectionThread()
 	{
 		object_detection_.Init();
 		while (true)
 		{
+			Mat detect_input_img;
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
 
 				if (!msgRecvQueueMat.empty())
 				{
-					image_ = msgRecvQueueMat.back();
+					detect_input_img= msgRecvQueueMat.back();
 				}
 			}
 
-				if (image_.data != NULL)
+				if (detect_input_img.data != NULL)
 				{
-					Timer caltime;
-					caltime.tic();
-
-					if (complete_ob_ == false)
-						skeleton_estimation(image_);
-					bool havehuman = false;
-
+					
+					detect_time_.tic();
 					AI_result_.clear();
-					AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
-					cout << "计算时间" << caltime.toc() << endl;
-					if (AI_result_.size() != 0)
-					{
-						complete_ob_ = true;
-						for (auto res : AI_result_)
-						{
-							if (res.itemClass == "Human")
-							{
-								havehuman = true;
-							}
-						}
-					}
+					AI_result_ = object_detection_.DL_Detector(detect_input_img, detect_input_img, display_image);
+					cout << "camera " << getID() << " 物体检测计算时间: " << detect_time_.toc() << "ms" << endl;
 
 
+					//cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
+					//InsertLogo(display_image, Title_image_, 0, 0);
+					//InsertLogo(display_image, map_image_, 40, 1445);
 
-					cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
-					InsertLogo(display_image, Title_image_, 0, 0);
-					InsertLogo(display_image, map_image_, 40, 1445);
+					/*
 					if (AI_result_.size() != 0)
 					{
 
@@ -239,6 +218,8 @@ namespace VisionMonitor
 						}
 					}
 
+*/
+
 				//Mat frame = getlastimage();
 				//resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
 				//cv::imshow("both:camera" + std::to_string(getID()), frame);
@@ -276,7 +257,6 @@ namespace VisionMonitor
 		}
 		
 
-		
 		cv::Mat org_image;
 		// read image
 		if (0== param_.data_from)
@@ -317,7 +297,6 @@ namespace VisionMonitor
 						string cameraid = to_string(id_);
 						imshow(cameraid, img);
 						imwrite(PicName, img);
-						
 						
 						waitKey(params.data_collection_interval);
 					}

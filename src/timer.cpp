@@ -21,6 +21,6 @@ double Timer::toc()
 {
 	auto now = system_clock::now();
 	auto period = duration_cast<microseconds>(now - start_);
-	start_ = now;
+	//start_ = now;
 	return period.count() / 1000.0;
 }
