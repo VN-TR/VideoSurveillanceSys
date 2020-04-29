@@ -79,7 +79,7 @@ namespace VisionMonitor
 
 		bool					is_start;				/*!< 监测已开启 */
 		Params				    param_;					/*!< 处理参数 */
-		std::vector<Camera>	    cameras_;				/*!< 相机列表 */
+		std::vector<std::shared_ptr<Camera>>	    cameras_;				/*!< 相机列表 */
 		std::thread				monitorThread_;			/*!< 监测进程 */
 
 	};

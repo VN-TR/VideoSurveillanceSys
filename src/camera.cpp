@@ -86,6 +86,36 @@ namespace VisionMonitor
 		return true;
 	}
 
+
+	std::thread* Camera::grabMonitor()
+	{
+		//if (path_loaded_ && frame_index_ >= test_image_path_.size())
+		//{
+		//	return nullptr;
+		//}
+		return new std::thread(&Camera::grabThread, this);
+	}
+
+	void Camera::grabThread()
+	{
+		while (true)
+		{
+			std::string pic_name;
+			Mat grabimg = grabbingFrame(param_, pic_name);
+			imshow("1", grabimg);
+			waitKey(2000);
+			{
+				std::lock_guard<std::mutex> locker_image(image_mutex_);
+				msgRecvQueueMat.push_back(grabimg);
+				cout << grabimg.cols << endl;
+				if (msgRecvQueueMat.size() > 2)
+				{
+					msgRecvQueueMat.pop_front();
+				}
+			}
+		}
+	}
+
 	std::thread* Camera::startMonitor()
 	{
 		//if (path_loaded_ && frame_index_ >= test_image_path_.size())
@@ -97,98 +127,112 @@ namespace VisionMonitor
 
 	void Camera::monitorThread()
 	{
-
-		std::string pic_name;
-		image_ = grabbingFrame(param_, pic_name);
-		
-
-		if (!param_.data_collection_stage)
+		while (true)
 		{
-			if (image_.data != NULL)
 			{
-				Mat distortimg;
-				cv::undistort(image_, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
-				image_ = distortimg;
-				if (complete_ob_ == false)
-					skeleton_estimation(image_);
-				bool havehuman = false;
+				std::lock_guard<std::mutex> locker_image(image_mutex_);
 
-				AI_result_.clear();
-				AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
-
-				if (AI_result_.size() != 0)
+				if (!msgRecvQueueMat.empty())
 				{
-					complete_ob_ = true;
-					for (auto res : AI_result_)
-					{
-						if (res.itemClass == "Human")
-						{
-							havehuman = true;
-						}
-					}
+					image_ = msgRecvQueueMat.back();
 				}
-				if (havehuman == true)
+			}
+
+
+			if (!param_.data_collection_stage)
+			{
+				if (image_.data != NULL)
 				{
-					skeleton_estimation(image_);
-					skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
-					display_image = skeleton_image_;
-				}
+					Mat distortimg;
+					cv::undistort(image_, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
+					image_ = distortimg;
+					if (complete_ob_ == false)
+						skeleton_estimation(image_);
+					bool havehuman = false;
 
+					AI_result_.clear();
+					AI_result_ = object_detection_.DL_Detector(image_, image_, display_image);
 
-				cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
-				InsertLogo(display_image, Title_image_, 0, 0);
-				InsertLogo(display_image, map_image_, 40, 1445);
-				if (AI_result_.size() != 0)
-				{
-
-					for (auto res : AI_result_)
+					if (AI_result_.size() != 0)
 					{
-						float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-						float vb = res.itemSite_Y2;
-
-						float A = -0.036;
-						float B = 9.9;
-						float C = 2.45;
-						float D = -14.972;
-
-						float kx, ky;
-						kx = (va - 935.5) / 1164;
-						ky = (vb - 517.8) / 1164;
-						float z = -(D) / (A*kx + B * ky + C);
-						float x = kx * z;
-
-						Point camera_pt(1682, 40);
-						Point pts;
-						if (abs(x) < 10 && abs(z) < 20)
+						complete_ob_ = true;
+						for (auto res : AI_result_)
 						{
-							pts.x = 1682 + x * 23;
-							pts.y = 40 + 475 - z * 23;
 							if (res.itemClass == "Human")
 							{
-								circle(display_image, pts, 6, Scalar(0, 0, 255), -1);
-							}
-							if (res.itemClass == "Forklift")
-							{
-								circle(display_image, pts, 10, Scalar(0, 255, 0), -1);
+								havehuman = true;
 							}
 						}
-
 					}
+					if (havehuman == true)
+					{
+						skeleton_estimation(image_);
+						skeleton_image_ = draw_skeleton_image(display_image, skeleton_point_);
+						display_image = skeleton_image_;
+					}
+
+
+					cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
+					InsertLogo(display_image, Title_image_, 0, 0);
+					InsertLogo(display_image, map_image_, 40, 1445);
+					if (AI_result_.size() != 0)
+					{
+
+						for (auto res : AI_result_)
+						{
+							float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+							float vb = res.itemSite_Y2;
+
+							float A = -0.036;
+							float B = 9.9;
+							float C = 2.45;
+							float D = -14.972;
+
+							float kx, ky;
+							kx = (va - 935.5) / 1164;
+							ky = (vb - 517.8) / 1164;
+							float z = -(D) / (A*kx + B * ky + C);
+							float x = kx * z;
+
+							Point camera_pt(1682, 40);
+							Point pts;
+							if (abs(x) < 10 && abs(z) < 20)
+							{
+								pts.x = 1682 + x * 23;
+								pts.y = 40 + 475 - z * 23;
+								if (res.itemClass == "Human")
+								{
+									circle(display_image, pts, 6, Scalar(0, 0, 255), -1);
+								}
+								if (res.itemClass == "Forklift")
+								{
+									circle(display_image, pts, 10, Scalar(0, 255, 0), -1);
+								}
+							}
+
+						}
+					}
+
+				Mat frame = getlastimage();
+				resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
+				cv::imshow("both:camera" + std::to_string(getID()), frame);
+				waitKey(1);
+
+					//waitKey(2000);
+
+					//int64_t time = common::get_time_stamp();
+					//LONG iCurChan = lRealPlayHandle_;
+					//char PicName[256] = { 0 };
+					//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+					//imwrite(PicName, image_);
+					//waitKey(1000);
+
 				}
 
-
-
-				//waitKey(2000);
-
-				//int64_t time = common::get_time_stamp();
-				//LONG iCurChan = lRealPlayHandle_;
-				//char PicName[256] = { 0 };
-				//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
-				//imwrite(PicName, image_);
-				//waitKey(1000);
 
 			}
 		}
+
 	}
 
 	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)

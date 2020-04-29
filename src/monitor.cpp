@@ -34,10 +34,11 @@ namespace VisionMonitor
 
 		for (size_t i = 0; i < cameras_.size(); i++)
 		{
-			fileopt.checkAndCreateDir(".\\image_log\\camera" + std::to_string(cameras_[i].getID()));
+			
+			fileopt.checkAndCreateDir(".\\image_log\\camera" + std::to_string(cameras_[i]->getID()));
 
-			std::cout << "camera[" << cameras_[i].getID() << "] initialize..." << std::endl;
-			if (cameras_[i].initialize(param_))
+			std::cout << "camera[" << cameras_[i]->getID() << "] initialize..." << std::endl;
+			if (cameras_[i]->initialize(param_))
 			{
 				std::cout << "OK" << std::endl;
 			}
@@ -64,40 +65,39 @@ namespace VisionMonitor
 
 	void Monitor::monitorThread()
 	{
-		while (is_start)
-		{
+
+		
 			Timer mytime;
 			mytime.tic();
 
 			std::vector<std::thread*> threads;
-			for (auto& camera : cameras_)
+			for (auto camera : cameras_)
 			{
-				auto thread = camera.startMonitor();
-				if (thread)
-					threads.push_back(thread);
+				auto thread1 = camera->grabMonitor();
+				auto thread = camera->startMonitor();
+				threads.push_back(thread1);
+				threads.push_back(thread);
 			}
 
-			if (threads.empty())break;
 			for (auto thread : threads)
 			{
 				thread->join();
 				delete thread;
 			}
-			for (auto& camera : cameras_)
-			{
-				if (camera.getlastimage().data != NULL)
-				{
-					Mat frame = camera.getlastimage();
-					resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
-					cv::imshow("both:camera" + std::to_string(camera.getID()), frame);
-					waitKey(1);
-					cout << frame.cols << endl;
-				}
-			}
+			//for (auto& camera : cameras_)
+			//{
+			//	if (camera.getlastimage().data != NULL)
+			//	{
+			//		Mat frame = camera.getlastimage();
+			//		resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
+			//		cv::imshow("both:camera" + std::to_string(camera.getID()), frame);
+			//		waitKey(1);
+			//		cout << frame.cols << endl;
+			//	}
+			//}
 			cout << "total time" << mytime.toc() << endl;
 
 
-		}
 	}
 
 	bool Monitor::loadParames()
@@ -127,6 +127,7 @@ namespace VisionMonitor
 		tinyxml2::XMLElement *params_root = params_doc->RootElement();
 		tinyxml2::XMLElement *camera_root = cameras_doc->RootElement();
 
+		
 		//加载相机参数;
 		double mi[9], md[4];
 		std::vector<std::string> vct_mi, vct_md;
@@ -134,13 +135,13 @@ namespace VisionMonitor
 		for (tinyxml2::XMLElement *camera_xml = camera_root->FirstChildElement(); 
 			camera_xml != nullptr; camera_xml = camera_xml->NextSiblingElement())
 		{
-			Camera cameratemp;
-			cameratemp.setID(atoi(camera_xml->Attribute("id")));
-			cameratemp.setIP((char *)camera_xml->Attribute("ip"));
-			cameratemp.setPort(atoi(camera_xml->Attribute("port")));
-			cameratemp.setUser((char*)camera_xml->Attribute("user"));
-			cameratemp.setPWD((char *)camera_xml->Attribute("pwd"));
-
+			shared_ptr<Camera> cameratemp = make_shared<Camera>();
+			cameratemp->setID(atoi(camera_xml->Attribute("id")));
+			cameratemp->setIP((char *)camera_xml->Attribute("ip"));
+			cameratemp->setPort(atoi(camera_xml->Attribute("port")));
+			cameratemp->setUser((char*)camera_xml->Attribute("user"));
+			cameratemp->setPWD((char *)camera_xml->Attribute("pwd"));
+			
 			/*!< 加载内参矩阵*/
 			std::string mi_str = camera_xml->Attribute("intrinsic_matrix");
 			vct_mi = common::split(mi_str, ",");
@@ -150,7 +151,7 @@ namespace VisionMonitor
 				mi[i] = atof(vct_mi[i].c_str());
 			}
 			intrinsic_matrix = cv::Mat(3, 3, CV_64FC1, mi);
-			cameratemp.setIntrinsicMatrix(intrinsic_matrix);
+			cameratemp->setIntrinsicMatrix(intrinsic_matrix);
 
 			/*!< 加载畸变矩阵*/
 			std::string md_str = camera_xml->Attribute("distortion_coeffs");
@@ -161,7 +162,7 @@ namespace VisionMonitor
 				md[i] = atof(vct_md[i].c_str());
 			}
 			distortion_coeffs = cv::Mat(1, 4, CV_64FC1, md);
-			cameratemp.setDistortionCoeffs(distortion_coeffs);
+			cameratemp->setDistortionCoeffs(distortion_coeffs);
 			cameras_.push_back(cameratemp);
 		}
 

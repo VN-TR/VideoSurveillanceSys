@@ -86,6 +86,13 @@ namespace VisionMonitor
 
 		void InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
+
+		std::thread* grabMonitor();
+
+
+		void grabThread();
+	
+
 		void Camera::monitorThread();
 
 		cv::Mat Camera::grabbingFrame(Params &params, std::string &img_name);
@@ -272,7 +279,8 @@ namespace VisionMonitor
 			cv::Mat						Inform_human_image_;
 			cv::Mat						Inform_good_image_;
 			cv::Mat						map_image_;
-
+			std::list<Mat>		    msgRecvQueueMat;
+			std::mutex					image_mutex_;
 	}; // end class camera
 
 } // end namespace VisionMonitor
