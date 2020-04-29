@@ -1,6 +1,7 @@
 #pragma once
 #include <chrono>
-class Timer
+#include "VideoSurveillanceSys/interactive.h"
+class SURVEILLANCE_API Timer
 {
 public:
 	Timer();
