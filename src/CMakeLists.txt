@@ -37,8 +37,8 @@ target_link_libraries(${PROJECT_NAME}
    D:/videorepo/libs/HCNetSDK/HCCore.lib
    D:/videorepo/libs/HCNetSDK/GdiPlus.lib
    D:/videorepo/libs/HCNetSDK/PlayCtrl.lib
-   D:/Tensorflow/GPU1.14/libtensorflow/lib/tensorflow.lib
-   D:/Tensorflow/GPU1.14/libtensorflow/lib/tensorflow_framework.lib
+   D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow.lib
+   D:/Tensorflow/cpu1.14/libtensorflow/lib/tensorflow_framework.lib
    E:/openpose/openpose-1.5.1/build/src/openpose/Release/openpose.lib
    E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/gflags.lib
    E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/lib/glog.lib
