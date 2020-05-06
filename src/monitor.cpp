@@ -66,26 +66,25 @@ namespace VisionMonitor
 	void Monitor::monitorThread()
 	{
 
-			std::vector<std::thread*> threads;
-			for (auto camera : cameras_)
-			{
-				auto thread1 = camera->startGrab();				
-				auto thread = camera->startObjectDetection();
-				auto thread2 = camera->startSkeleton();
+		std::vector<std::thread*> threads;
+		for (auto camera : cameras_)
+		{
+			auto thread1 = camera->startGrab();		
+			auto thread = camera->startObjectDetection();	
+			auto thread2 = camera->startSkeleton();	
+			auto thread3 = camera->startDisplay();
 
-				
-				threads.push_back(thread1);
-				threads.push_back(thread);
-				threads.push_back(thread2);
-			}
+			threads.push_back(thread1);
+			threads.push_back(thread);
+			threads.push_back(thread2);
+			threads.push_back(thread3);
+		}
 
-			for (auto thread : threads)
-			{
-				thread->join();
-				delete thread;
-			}
-
-
+		for (auto thread : threads)
+		{
+			thread->join();
+			delete thread;
+		}
 
 	}
 

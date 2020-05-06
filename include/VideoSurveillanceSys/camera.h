@@ -143,7 +143,14 @@ namespace VisionMonitor
 		*/
 		void skeletonThread();
 
-
+		/*!
+		* @ brief  显示线程
+		* @ author ybc
+		* @ date   2020年4月29日
+		* @ return     void  
+		* @ note
+		*/
+		void displayThread();
 
 
 		void drawMap(Mat &inputmat);
@@ -281,18 +288,18 @@ namespace VisionMonitor
 			* @ author ybc
 			* @ date   2020年4月29日
 			* @ param[in]  const Mat input_image
-			* @ return     void  
+			* @ return     void
 			* @ note	基于caffe，在GPU下运算。但是由于openpose特性，使得计算时，暂停其他线程。
 			*/
-			void skeleton_estimation(const Mat input_image);
+			vector<float> skeleton_estimation(const Mat input_image);
 
 			/*!
 			* @ brief  绘制骨骼识别图
 			* @ author ybc
 			* @ date   2020年4月24日
 			* @ param[in]  const Mat input_image
-			* @ param[out] Mat & output_image 
-			* @ return     cv::Mat  
+			* @ param[out] Mat & output_image
+			* @ return     cv::Mat
 			* @ note
 			*/
 			Mat draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint);
@@ -310,7 +317,7 @@ namespace VisionMonitor
 			std::string					pwd_;						/*! <密码 */
 			cv::Mat						intrinsic_matrix_;			/*! <摄像头内部参数 */
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
-			
+
 			//相机运行
 			LONG						lUserID_;					/*! <编号 */
 			NET_DVR_DEVICEINFO_V30		struDeviceInfo_;			/*! <设备信息 */
@@ -341,7 +348,7 @@ namespace VisionMonitor
 			//运行参数
 			int							frame_index_;				/*! <帧数 */
 			cv::Mat						image_;						/*! <处理图像 */
-			cv::Mat						display_image;				/*! <显示图像 */
+			cv::Mat						display_image_;				/*! <显示图像 */
 			cv::Mat						skeleton_image_;			/*! <骨骼图像 */
 			cv::Mat						Title_image_;				/*! <标签图像 */
 			cv::Mat						Inform_car_image_;			/*! <标签图像 */
@@ -350,9 +357,17 @@ namespace VisionMonitor
 			cv::Mat						map_image_;					/*! <地图 */
 
 			//线程处理
-			std::list<Mat>		        msgRecvQueueMat;
-			std::mutex					image_mutex_;
+			std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
+			std::mutex					image_mutex_;				/*! <输入图片锁 */
+			std::list<Mat>		        msgQueue_AI_Mat_;			/*! <AI结果图像队列 */
+			std::mutex					AI_image_mutex_;			/*! <AI结果图片锁 */
+			std::mutex					AI_res_mutex_;				/*! <AI结果锁 */
+			std::list<vector<Saveditem>>msgQueue_Ai_Result_;		/*! <AI结果队列 */
+			std::mutex					Skeleton_res_mutex_;		/*! <骨骼结果锁 */
+			std::list<vector<float>>	msgQueue_skeleton_Result_;	/*! <AI结果队列 */
 
+			std::mutex					have_people_mutex_;			/*! <是否有人锁 */
+			std::list<bool>				msgQueue_have_people_;		/*! <是否有人结果队列 */
 
 
 	}; // end class camera

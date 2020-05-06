@@ -35,7 +35,8 @@ namespace VisionMonitor
 		//如果是不是图片采集阶段（运行阶段）则初始化物体检测和骨骼检测
 		if (param_.data_collection_stage == false)
 		{
-			opWrapper.start();
+			
+			object_detection_.Init();
 			//skeleton_estimation_.init();
 			//opWrapper.disableMultiThreading();
 			
@@ -105,15 +106,16 @@ namespace VisionMonitor
 				grabimg = distortimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
-					msgRecvQueueMat.push_back(grabimg);
-					if (msgRecvQueueMat.size() > 2)
+					msgRecvQueueMat_.push_back(grabimg);
+					if (msgRecvQueueMat_.size() > 2)
 					{
-						msgRecvQueueMat.pop_front();
+						msgRecvQueueMat_.pop_front();
 					}
 				}
 				
 				cout << "camera "<<getID()<< " 抓图时间: " << grab_time_.toc() << "ms"<< endl;
 			}
+			Sleep(10);
 		}
 	}
 
@@ -124,25 +126,150 @@ namespace VisionMonitor
 
 	void Camera::skeletonThread()
 	{
-
+		opWrapper.start();
+		//opWrapper.disableMultiThreading();
 		while (true)
 		{
-			Mat skeleton_input_img;
-			{
-				std::lock_guard<std::mutex> locker_image(image_mutex_);
 
-				if (!msgRecvQueueMat.empty())
+			bool havepeople = false;
+			{
+				std::lock_guard<std::mutex> locker_havepeople(have_people_mutex_);
+
+				if (!msgQueue_have_people_.empty())
 				{
-					skeleton_input_img = msgRecvQueueMat.back();
+					havepeople = msgQueue_have_people_.back();
 				}
 			}
-			if (skeleton_input_img.data != NULL)
+
+			if (havepeople)
 			{
-				skeleton_time_.tic();
-				skeleton_estimation(skeleton_input_img);
-				cout << "camera " << getID() << " 骨骼计算时间: " << skeleton_time_.toc() << "ms" << endl;
+				Mat skeleton_input_img;
+				{
+					std::lock_guard<std::mutex> locker_image(image_mutex_);
+
+					if (!msgRecvQueueMat_.empty())
+					{
+						skeleton_input_img = msgRecvQueueMat_.back();
+					}
+				}
+				if (skeleton_input_img.data != NULL)
+				{
+					skeleton_time_.tic();
+					vector<float> skeleton_res;
+					skeleton_res = skeleton_estimation(skeleton_input_img);
+
+					{
+						std::lock_guard<std::mutex> locker_ske(Skeleton_res_mutex_);
+						msgQueue_skeleton_Result_.push_back(skeleton_res);
+						if (msgQueue_skeleton_Result_.size() > 1)
+						{
+							msgQueue_skeleton_Result_.pop_front();
+						}
+					}
+
+					cout << "camera " << getID() << " 骨骼计算时间: " << skeleton_time_.toc() << "ms" << endl;
+				}
 			}
+			
+			Sleep(5);
 		}
+	}
+	std::thread* Camera::startDisplay()
+	{
+		return new std::thread(&Camera::displayThread, this);
+	}
+
+	void Camera::displayThread()
+	{
+		while (true)
+		{
+			Mat object_detect_outimg;
+			{
+				std::lock_guard<std::mutex> locker_AI_img(AI_image_mutex_);
+
+				if (!msgQueue_AI_Mat_.empty())
+				{
+					object_detect_outimg = msgQueue_AI_Mat_.back();
+				}
+			}
+			vector<Saveditem> AI_result;
+			{
+				std::lock_guard<std::mutex> locker_AI(AI_res_mutex_);
+				if (!msgQueue_Ai_Result_.empty())
+				{
+					AI_result = msgQueue_Ai_Result_.back();
+				}
+			}
+			vector<float> skeleton_res;
+			{
+				std::lock_guard<std::mutex> locker_ske(Skeleton_res_mutex_);
+				if (!msgQueue_skeleton_Result_.empty())
+				{
+					skeleton_res = msgQueue_skeleton_Result_.back();
+					//msgQueue_skeleton_Result_.clear();
+				}
+			}
+			
+
+			if (object_detect_outimg.data != NULL)
+			{
+				cv::cvtColor(object_detect_outimg, object_detect_outimg, cv::COLOR_BGR2BGRA);
+				InsertLogo(object_detect_outimg, Title_image_, 0, 0);
+				InsertLogo(object_detect_outimg, map_image_, 40, 1445);
+				display_image_ = object_detect_outimg;
+				if (!skeleton_res.empty())
+				{
+					Mat skeleton_img = draw_skeleton_image(display_image_, skeleton_res);
+					display_image_ = skeleton_img;
+				}
+				if (!AI_result.empty())
+				{
+					for (auto res : AI_result)
+					{
+						float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+						float vb = res.itemSite_Y2;
+
+						float A = -0.036;
+						float B = 9.9;
+						float C = 2.45;
+						float D = -14.972;
+
+						float kx, ky;
+						kx = (va - 935.5) / 1164;
+						ky = (vb - 517.8) / 1164;
+						float z = -(D) / (A*kx + B * ky + C);
+						float x = kx * z;
+
+						Point camera_pt(1682, 40);
+						Point pts;
+						if (abs(x) < 10 && abs(z) < 20)
+						{
+							pts.x = 1682 + x * 23;
+							pts.y = 40 + 475 - z * 23;
+							if (res.itemClass == "Human")
+							{
+								circle(display_image_, pts, 6, Scalar(0, 0, 255), -1);
+							}
+							if (res.itemClass == "Forklift")
+							{
+								circle(display_image_, pts, 10, Scalar(0, 255, 0), -1);
+							}
+						}
+
+					}
+				}
+
+				
+				resize(display_image_, display_image_, Size(960, 540));
+				imshow("1", display_image_);
+				waitKey(1);
+			}
+			AI_result.clear();
+			skeleton_res.clear();
+			Sleep(5);
+
+		}
+
 	}
 
 
@@ -153,93 +280,87 @@ namespace VisionMonitor
 
 	void Camera::objectDetectionThread()
 	{
-		object_detection_.Init();
+		
 		while (true)
 		{
 			Mat detect_input_img;
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
 
-				if (!msgRecvQueueMat.empty())
+				if (!msgRecvQueueMat_.empty())
 				{
-					detect_input_img= msgRecvQueueMat.back();
+					detect_input_img = msgRecvQueueMat_.back();
 				}
 			}
 
-				if (detect_input_img.data != NULL)
+			if (detect_input_img.data != NULL)
+			{
+				detect_time_.tic();
+				vector<Saveditem> AI_result;
+				Mat display_image;
+				AI_result = object_detection_.DL_Detector(detect_input_img, detect_input_img, display_image);
+				bool havepeople = false;
+				for (auto res : AI_result)
 				{
-					
-					detect_time_.tic();
-					AI_result_.clear();
-					AI_result_ = object_detection_.DL_Detector(detect_input_img, detect_input_img, display_image);
-					cout << "camera " << getID() << " 物体检测计算时间: " << detect_time_.toc() << "ms" << endl;
-
-
-					//cv::cvtColor(display_image, display_image, cv::COLOR_BGR2BGRA);
-					//InsertLogo(display_image, Title_image_, 0, 0);
-					//InsertLogo(display_image, map_image_, 40, 1445);
-
-					/*
-					if (AI_result_.size() != 0)
+					cout << "res.itemClass" << res.itemClass << endl;
+					if (res.itemClass == "Human")
 					{
-
-						for (auto res : AI_result_)
-						{
-							float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-							float vb = res.itemSite_Y2;
-
-							float A = -0.036;
-							float B = 9.9;
-							float C = 2.45;
-							float D = -14.972;
-
-							float kx, ky;
-							kx = (va - 935.5) / 1164;
-							ky = (vb - 517.8) / 1164;
-							float z = -(D) / (A*kx + B * ky + C);
-							float x = kx * z;
-
-							Point camera_pt(1682, 40);
-							Point pts;
-							if (abs(x) < 10 && abs(z) < 20)
-							{
-								pts.x = 1682 + x * 23;
-								pts.y = 40 + 475 - z * 23;
-								if (res.itemClass == "Human")
-								{
-									circle(display_image, pts, 6, Scalar(0, 0, 255), -1);
-								}
-								if (res.itemClass == "Forklift")
-								{
-									circle(display_image, pts, 10, Scalar(0, 255, 0), -1);
-								}
-							}
-
-						}
+						havepeople = true;
 					}
-
-*/
-
-				//Mat frame = getlastimage();
-				//resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
-				//cv::imshow("both:camera" + std::to_string(getID()), frame);
-				//waitKey(1);
-				
-
-					//waitKey(2000);
-
-					//int64_t time = common::get_time_stamp();
-					//LONG iCurChan = lRealPlayHandle_;
-					//char PicName[256] = { 0 };
-					//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
-					//imwrite(PicName, image_);
-					//waitKey(1000);
-
+				}
+				{
+					std::lock_guard<std::mutex> locker_havepeople (have_people_mutex_);
+					msgQueue_have_people_.push_back(havepeople);
+					if (msgQueue_have_people_.size() > 5)
+					{
+						msgQueue_have_people_.pop_front();
+					}
+				}
+				{
+					std::lock_guard<std::mutex> locker_AI(AI_res_mutex_);
+					msgQueue_Ai_Result_.push_back(AI_result);
+					if (msgQueue_Ai_Result_.size() > 5)
+					{
+						msgQueue_Ai_Result_.pop_front();
+					}
+				}
+				{
+					std::lock_guard<std::mutex> locker_AI_img(AI_image_mutex_);
+					msgQueue_AI_Mat_.push_back(display_image);
+					if (msgQueue_AI_Mat_.size() > 5)
+					{
+						msgQueue_AI_Mat_.pop_front();
+					}
 				}
 
-		}
+				cout << "camera " << getID() << " 物体检测计算时间: " << detect_time_.toc() << "ms" << endl;
 
+			}
+
+			Sleep(10);
+		}
 	}
+
+
+
+
+//Mat frame = getlastimage();
+//resize(frame, frame, Size(param_.image_output_width, param_.image_output_height));
+//cv::imshow("both:camera" + std::to_string(getID()), frame);
+//waitKey(1);
+
+
+	//waitKey(2000);
+
+	//int64_t time = common::get_time_stamp();
+	//LONG iCurChan = lRealPlayHandle_;
+	//char PicName[256] = { 0 };
+	//sprintf_s(PicName, ".\\image_log\\camera%d-out\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
+	//imwrite(PicName, image_);
+	//waitKey(1000);
+
+
+
 
 	cv::Mat Camera::grabbingFrame(Params &params,  std::string &img_name)
 	{
@@ -381,7 +502,7 @@ namespace VisionMonitor
 
 	Mat Camera::getlastimage()
 	{
-		return display_image;
+		return display_image_;
 	}
 
 	void Camera::drawMap(Mat &inputmat)
@@ -389,12 +510,14 @@ namespace VisionMonitor
 
 	}
 
-	void Camera::skeleton_estimation(const Mat input_image)
+	vector<float> Camera::skeleton_estimation(const Mat input_image)
 	{
 		Mat skeleton_input_image = input_image;
 		resize(skeleton_input_image, skeleton_input_image,
 			Size(skeleton_input_image.cols / param_.skeleton_desample_rate,
 				skeleton_input_image.rows / param_.skeleton_desample_rate));
+		
+		vector<float> skeleton_point;
 		auto datumProcessed = opWrapper.emplaceAndPop(skeleton_input_image);
 		if (datumProcessed != nullptr)
 		{
@@ -403,16 +526,15 @@ namespace VisionMonitor
 
 			int peopleCount = datumProcessed->at(0)->poseKeypoints.getSize(0);
 			skeleton_people_count_ = peopleCount;
-			skeleton_point_.clear();
-			skeleton_point_.resize(peopleCount * 75);
+			skeleton_point.clear();
+			skeleton_point.resize(peopleCount * 75);
 			for (int i = 0; i < peopleCount * 75; i++)
 			{
-				skeleton_point_[i] = datumProcessed->at(0)->poseKeypoints[i];
+				skeleton_point[i] = datumProcessed->at(0)->poseKeypoints[i];
 			}
-			//skeleton_image_ = draw_skeleton_image(image_,skeleton_point_);
-
-
+			
 		}
+			return skeleton_point;
 	}
 
 
@@ -431,50 +553,50 @@ namespace VisionMonitor
 			//头部
 			//0-鼻子
 			Point pt0(0,0);
-			if (skeleton_point_[i * 75] != 0)
+			if (skeletonPoint[i * 75] != 0)
 			{
-				pt0 = Point((int)skeleton_point_[i * 75] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 1] * param_.skeleton_desample_rate);
+				pt0 = Point((int)skeletonPoint[i * 75] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt0, pointWidth, Scalar(74, 38, 252), -1);
 			}
 			//1-Neck
 			Point pt1(0, 0);
-			if (skeleton_point_[i * 75 + 1*3] != 0)
+			if (skeletonPoint[i * 75 + 1*3] != 0)
 			{
-				pt1 = Point((int)skeleton_point_[i * 75 + 1 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 1 * 3 + 1] * param_.skeleton_desample_rate);
+				pt1 = Point((int)skeletonPoint[i * 75 + 1 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 1 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt1, pointWidth, Scalar(31, 42, 244), -1);
 			}
 			//15-REye
 			Point pt15(0, 0);
-			if (skeleton_point_[i * 75 + 15 * 3] != 0)
+			if (skeletonPoint[i * 75 + 15 * 3] != 0)
 			{
-				pt15 = Point((int)skeleton_point_[i * 75 + 15 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 15 * 3 + 1] * param_.skeleton_desample_rate);
+				pt15 = Point((int)skeletonPoint[i * 75 + 15 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 15 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt15, pointWidth, Scalar(171, 26, 246), -1);
 			}
 			//16-LEye
 			Point pt16(0, 0);
-			if (skeleton_point_[i * 75 + 16 * 3] != 0)
+			if (skeletonPoint[i * 75 + 16 * 3] != 0)
 			{
-				pt16 = Point((int)skeleton_point_[i * 75 + 16 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 16 * 3 + 1] * param_.skeleton_desample_rate);
+				pt16 = Point((int)skeletonPoint[i * 75 + 16 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 16 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt16, pointWidth, Scalar(170, 16, 74), -1);
 			}
 			//17-REar
 			Point pt17(0, 0);
-			if (skeleton_point_[i * 75 + 17 * 3] != 0)
+			if (skeletonPoint[i * 75 + 17 * 3] != 0)
 			{
-				pt17 = Point((int)skeleton_point_[i * 75 + 17 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 17 * 3 + 1] * param_.skeleton_desample_rate);
+				pt17 = Point((int)skeletonPoint[i * 75 + 17 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 17 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt17, pointWidth, Scalar(171, 26, 246), -1);
 			}			
 			//18-LEar
 			Point pt18(0, 0);
-			if (skeleton_point_[i * 75 + 18 * 3] != 0)
+			if (skeletonPoint[i * 75 + 18 * 3] != 0)
 			{
-				pt18 = Point((int)skeleton_point_[i * 75 + 18 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 18 * 3 + 1] * param_.skeleton_desample_rate);
+				pt18 = Point((int)skeletonPoint[i * 75 + 18 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 18 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt18, pointWidth, Scalar(170, 16, 74), -1);
 			}
 			if (pt0.x != 0 && pt1.x != 0)
@@ -501,26 +623,26 @@ namespace VisionMonitor
 			//右臂
 			//2-RShoulder
 			Point pt2(0, 0);
-			if (skeleton_point_[i * 75 + 2 * 3] != 0)
+			if (skeletonPoint[i * 75 + 2 * 3] != 0)
 			{
-				pt2 = Point((int)skeleton_point_[i * 75 + 2 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 2 * 3 + 1] * param_.skeleton_desample_rate);
+				pt2 = Point((int)skeletonPoint[i * 75 + 2 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 2 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt2, pointWidth, Scalar(1, 126, 242), -1);
 			}
 			//3-RElbow
 			Point pt3(0, 0);
-			if (skeleton_point_[i * 75 + 3 * 3] != 0)
+			if (skeletonPoint[i * 75 + 3 * 3] != 0)
 			{
-				pt3 = Point((int)skeleton_point_[i * 75 + 3 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 3 * 3 + 1] * param_.skeleton_desample_rate);
+				pt3 = Point((int)skeletonPoint[i * 75 + 3 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 3 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt3, pointWidth, Scalar(0, 203, 253), -1);
 			}
 			//4-RWrist
 			Point pt4(0, 0);
-			if (skeleton_point_[i * 75 + 4 * 3] != 0)
+			if (skeletonPoint[i * 75 + 4 * 3] != 0)
 			{
-				pt4 = Point((int)skeleton_point_[i * 75 + 4 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 4 * 3 + 1] * param_.skeleton_desample_rate);
+				pt4 = Point((int)skeletonPoint[i * 75 + 4 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 4 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt4, pointWidth, Scalar(67, 238, 245), -1);
 			}
 			if (pt1.x != 0 && pt2.x != 0)
@@ -539,26 +661,26 @@ namespace VisionMonitor
 			//左臂
 			//5-LShoulder
 			Point pt5(0, 0);
-			if (skeleton_point_[i * 75 + 5 * 3] != 0)
+			if (skeletonPoint[i * 75 + 5 * 3] != 0)
 			{
-				pt5 = Point((int)skeleton_point_[i * 75 + 5 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 5 * 3 + 1] * param_.skeleton_desample_rate);
+				pt5 = Point((int)skeletonPoint[i * 75 + 5 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 5 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt5, pointWidth, Scalar(0, 253, 184), -1);
 			}
 			//6-LElbow
 			Point pt6(0, 0);
-			if (skeleton_point_[i * 75 + 6 * 3] != 0)
+			if (skeletonPoint[i * 75 + 6 * 3] != 0)
 			{
-				pt6 = Point((int)skeleton_point_[i * 75 + 6 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 6 * 3 + 1] * param_.skeleton_desample_rate);
+				pt6 = Point((int)skeletonPoint[i * 75 + 6 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 6 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt6, pointWidth, Scalar(80, 234, 89), -1);
 			}
 			//7-LWrist
 			Point pt7(0, 0);
-			if (skeleton_point_[i * 75 + 7 * 3] != 0)
+			if (skeletonPoint[i * 75 + 7 * 3] != 0)
 			{
-				pt7 = Point((int)skeleton_point_[i * 75 + 7 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 7 * 3 + 1] * param_.skeleton_desample_rate);
+				pt7 = Point((int)skeletonPoint[i * 75 + 7 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 7 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt7, pointWidth, Scalar(82, 234, 93), -1);
 			}
 			if (pt1.x != 0 && pt5.x != 0)
@@ -576,10 +698,10 @@ namespace VisionMonitor
 
 			//8-MidHip
 			Point pt8(0, 0);
-			if (skeleton_point_[i * 75 + 8 * 3] != 0)
+			if (skeletonPoint[i * 75 + 8 * 3] != 0)
 			{
-				pt8 = Point((int)skeleton_point_[i * 75 + 8 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 8 * 3 + 1] * param_.skeleton_desample_rate);
+				pt8 = Point((int)skeletonPoint[i * 75 + 8 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 8 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt8, pointWidth, Scalar(31, 42, 244), -1);
 			}
 			if (pt8.x != 0 && pt1.x != 0)
@@ -589,26 +711,26 @@ namespace VisionMonitor
 			//右腿
 			//9-RHip
 			Point pt9(0, 0);
-			if (skeleton_point_[i * 75 + 9 * 3] != 0)
+			if (skeletonPoint[i * 75 + 9 * 3] != 0)
 			{
-				pt9 = Point((int)skeleton_point_[i * 75 + 9 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 9 * 3 + 1] * param_.skeleton_desample_rate);
+				pt9 = Point((int)skeletonPoint[i * 75 + 9 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 9 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt9, pointWidth, Scalar(76, 252, 30), -1);
 			}
 			//10-RKnee
 			Point pt10(0, 0);
-			if (skeleton_point_[i * 75 + 10 * 3] != 0)
+			if (skeletonPoint[i * 75 + 10 * 3] != 0)
 			{
-				pt10 = Point((int)skeleton_point_[i * 75 + 10 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 10 * 3 + 1] * param_.skeleton_desample_rate);
+				pt10 = Point((int)skeletonPoint[i * 75 + 10 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 10 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt10, pointWidth, Scalar(150, 195, 47), -1);
 			}
 			//11-RAnkle
 			Point pt11(0, 0);
-			if (skeleton_point_[i * 75 + 11 * 3] != 0)
+			if (skeletonPoint[i * 75 + 11 * 3] != 0)
 			{
-				pt11 = Point((int)skeleton_point_[i * 75 + 11 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 11 * 3 + 1] * param_.skeleton_desample_rate);
+				pt11 = Point((int)skeletonPoint[i * 75 + 11 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 11 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt11, pointWidth, Scalar(208, 212, 44), -1);
 			}
 			if (pt8.x != 0 && pt9.x != 0)
@@ -626,26 +748,26 @@ namespace VisionMonitor
 			//左腿
 			//12-RHip
 			Point pt12(0, 0);
-			if (skeleton_point_[i * 75 + 12 * 3] != 0)
+			if (skeletonPoint[i * 75 + 12 * 3] != 0)
 			{
-				pt12 = Point((int)skeleton_point_[i * 75 + 12 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 12 * 3 + 1] * param_.skeleton_desample_rate);
+				pt12 = Point((int)skeletonPoint[i * 75 + 12 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 12 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt12, pointWidth, Scalar(193, 150, 53), -1);
 			}
 			//13-RKnee
 			Point pt13(0, 0);
-			if (skeleton_point_[i * 75 + 13 * 3] != 0)
+			if (skeletonPoint[i * 75 + 13 * 3] != 0)
 			{
-				pt13 = Point((int)skeleton_point_[i * 75 + 13 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 13 * 3 + 1] * param_.skeleton_desample_rate);
+				pt13 = Point((int)skeletonPoint[i * 75 + 13 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 13 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt13, pointWidth, Scalar(212, 80, 36), -1);
 			}
 			//14-RAnkle
 			Point pt14(0, 0);
-			if (skeleton_point_[i * 75 + 14 * 3] != 0)
+			if (skeletonPoint[i * 75 + 14 * 3] != 0)
 			{
-				pt14 = Point((int)skeleton_point_[i * 75 + 14 * 3] * param_.skeleton_desample_rate,
-					(int)skeleton_point_[i * 75 + 14 * 3 + 1] * param_.skeleton_desample_rate);
+				pt14 = Point((int)skeletonPoint[i * 75 + 14 * 3] * param_.skeleton_desample_rate,
+					(int)skeletonPoint[i * 75 + 14 * 3 + 1] * param_.skeleton_desample_rate);
 				circle(outputimage, pt14, pointWidth, Scalar(198, 39, 45), -1);
 			}
 			if (pt8.x != 0 && pt12.x != 0)

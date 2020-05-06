@@ -23,7 +23,7 @@ include_directories(
   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include
   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe/include2
   E:/openpose/openpose-1.5.1/3rdparty/windows/caffe3rdparty/include
-  D:/Tensorflow/cpu1.14/libtensorflow/include
+  D:/Tensorflow/GPU1.14/libtensorflow/include
   )
 
 # 设置：生成库文件的地址
