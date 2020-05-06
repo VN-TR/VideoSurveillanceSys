@@ -70,14 +70,11 @@ namespace VisionMonitor
 		for (auto camera : cameras_)
 		{
 			auto thread1 = camera->startGrab();		
-			auto thread = camera->startObjectDetection();	
-			auto thread2 = camera->startSkeleton();	
-			auto thread3 = camera->startDisplay();
+			auto thread = camera->startMonitor();	
 
 			threads.push_back(thread1);
 			threads.push_back(thread);
-			threads.push_back(thread2);
-			threads.push_back(thread3);
+
 		}
 
 		for (auto thread : threads)

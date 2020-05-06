@@ -125,6 +125,11 @@ namespace VisionMonitor
 		*/
 		void grabThread();
 
+		void monitorThread();
+		std::thread* startMonitor();
+		void display(Mat &object_detect_outimg, vector<float> &skeleton_res, vector<Saveditem> &AI_result);
+
+		void filter(vector<float> &skeleton_res, vector<Saveditem> &AI_result);
 		/*!
 		* @ brief  物体检测线程
 		* @ author ybc
