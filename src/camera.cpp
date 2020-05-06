@@ -37,6 +37,7 @@ namespace VisionMonitor
 		{
 			
 			object_detection_.Init();
+			opWrapper.start();
 			//skeleton_estimation_.init();
 			//opWrapper.disableMultiThreading();
 			
@@ -128,7 +129,7 @@ namespace VisionMonitor
 
 	void Camera::monitorThread()
 	{
-		opWrapper.start();
+	
 		while (true)
 		{
 			Mat detect_input_img;
@@ -291,9 +292,9 @@ namespace VisionMonitor
 				filter(skeleton_res, AI_result);
 			}
 
-
+			string camera_id = "camera" + to_string(getID());
 			resize(display_image_, display_image_, Size(960, 540));
-			imshow("1", display_image_);
+			imshow(camera_id, display_image_);
 			waitKey(1);
 		}
 	}
