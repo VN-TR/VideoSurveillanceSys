@@ -95,8 +95,6 @@ namespace VisionMonitor
 
 	void Camera::grabThread()
 	{
-		while (true)
-		{
 			grab_time_.tic();
 			std::string pic_name;
 			Mat grabimg = grabbingFrame(param_, pic_name);
@@ -105,6 +103,7 @@ namespace VisionMonitor
 				Mat distortimg;
 				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				grabimg = distortimg;
+				image_ = distortimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat_.push_back(grabimg);
@@ -114,10 +113,9 @@ namespace VisionMonitor
 					}
 				}
 				
-				cout << "camera "<<getID()<< " 抓图时间: " << grab_time_.toc() << "ms"<< endl;
+				//cout << "camera "<<getID()<< " 抓图时间: " << grab_time_.toc() << "ms"<< endl;
 			}
 			Sleep(10);
-		}
 	}
 
 
@@ -126,6 +124,35 @@ namespace VisionMonitor
 		return new std::thread(&Camera::monitorThread, this);
 	}
 
+	void Camera::monitor(Mat &input) 
+	{
+		if (input.data != NULL)
+		{
+			detect_time_.tic();
+			vector<Saveditem> AI_result;
+			Mat display_image;
+			AI_result = object_detection_.DL_Detector(input, input, display_image);
+			bool havepeople = false;
+			for (auto res : AI_result)
+			{
+				cout << "res.itemClass" << res.itemClass << endl;
+				if (res.itemClass == "Human")
+				{
+					havepeople = true;
+				}
+			}
+			vector<float> skeleton_res;
+			if (havepeople)
+			{
+				if (input.data != NULL)
+				{
+					skeleton_res = skeleton_estimation(input);
+					cout << "camera " << getID() << " 骨骼计算时间: " << detect_time_.toc() << "ms" << endl;
+				}
+			}
+			display(display_image, skeleton_res, AI_result);
+		}
+	}
 
 	void Camera::monitorThread()
 	{
@@ -418,6 +445,16 @@ namespace VisionMonitor
 		return pwd_;
 	}
 
+	void Camera::setSite(std::string site)
+	{
+		site_ = site;
+	}
+
+	std::string Camera::getSite(void)
+	{
+		return site_;
+	}
+
 	cv::Mat	Camera::getIntrinsicMatrix()
 	{
 		return intrinsic_matrix_;
@@ -440,7 +477,7 @@ namespace VisionMonitor
 
 	Mat Camera::getlastimage()
 	{
-		return display_image_;
+		return image_;
 	}
 
 	void Camera::drawMap(Mat &inputmat)

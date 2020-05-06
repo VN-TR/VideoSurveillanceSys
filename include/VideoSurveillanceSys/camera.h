@@ -251,7 +251,20 @@ namespace VisionMonitor
 		  */
 		std::string getPWD(void);
 
-
+		/**
+  * @brief 设置设备注册密码
+  * @param[in] std::string pwd 设备注册密码
+  * @return 无
+  * @retval void
+  */
+		void setSite(std::string pwd);
+	
+		/**
+		  * @brief 获取设备注册密码
+		  * @return 返回设备注册密码
+		  * @retval std::string 设备注册密码
+		  */
+		std::string getSite(void);
 		/**
 		  * @brief  获取摄像头内部参数
 		  * @date   2018年9月18日
@@ -284,7 +297,7 @@ namespace VisionMonitor
 		void setDistortionCoeffs(cv::Mat &distortion_coeffs);
 
 		Mat getlastimage();
-
+		void Camera::monitor(Mat &input);
 
 		private:
 
@@ -320,6 +333,8 @@ namespace VisionMonitor
 			std::string					ip_;						/*! <IP地址 */
 			std::string					user_;					    /*! <用户名 */
 			std::string					pwd_;						/*! <密码 */
+			std::string					site_;						/*! <位置 */
+
 			cv::Mat						intrinsic_matrix_;			/*! <摄像头内部参数 */
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
 

@@ -65,23 +65,51 @@ namespace VisionMonitor
 
 	void Monitor::monitorThread()
 	{
-
-		std::vector<std::thread*> threads;
-		for (auto camera : cameras_)
+		while (true)
 		{
-			auto thread1 = camera->startGrab();		
-			auto thread = camera->startMonitor();	
+			Timer mytime;
+			mytime.tic();
+			std::vector<std::thread*> threads;
+			for (auto camera : cameras_)
+			{
+				auto thread = camera->startGrab();
+				threads.push_back(thread);
+			}
+			for (auto thread : threads)
+			{
+				thread->join();
+				delete thread;
+			}
+			
+			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
 
-			threads.push_back(thread1);
-			threads.push_back(thread);
-
+			for (auto camera : cameras_)
+			{
+				string site = camera->getSite();
+				Mat camera_img = camera->getlastimage();
+				if (site == "TL" && camera_img.data!= NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = image(cv::Rect(0, 0, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+				if (site == "BL" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = image(cv::Rect(0, 1080, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+				if (site == "BR" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = image(cv::Rect(1920, 1080, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+			}
+			cameras_[0]->monitor(image);
+			cout << "时间" << mytime.toc() << endl;
 		}
 
-		for (auto thread : threads)
-		{
-			thread->join();
-			delete thread;
-		}
 
 	}
 
@@ -126,7 +154,7 @@ namespace VisionMonitor
 			cameratemp->setPort(atoi(camera_xml->Attribute("port")));
 			cameratemp->setUser((char*)camera_xml->Attribute("user"));
 			cameratemp->setPWD((char *)camera_xml->Attribute("pwd"));
-			
+			cameratemp->setSite((char *)camera_xml->Attribute("site"));
 			/*!< 加载内参矩阵*/
 			std::string mi_str = camera_xml->Attribute("intrinsic_matrix");
 			vct_mi = common::split(mi_str, ",");
