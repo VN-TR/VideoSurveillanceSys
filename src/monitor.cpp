@@ -31,11 +31,8 @@ namespace VisionMonitor
 		opWrapper.start();
 		opWrapper.disableMultiThreading();
 
-		Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_human_image_ = cv::imread("./inform_image/3.png", CV_LOAD_IMAGE_UNCHANGED);
-		Inform_good_image_ = cv::imread("./inform_image/4.png", CV_LOAD_IMAGE_UNCHANGED);
-		map_image_ = cv::imread("./inform_image/5.png", CV_LOAD_IMAGE_UNCHANGED);
+		Title_image_ = cv::imread("./inform_image/title.png", CV_LOAD_IMAGE_UNCHANGED);
+		map_image_ = cv::imread("./inform_image/videomap.png", CV_LOAD_IMAGE_UNCHANGED);
 
 		FileOperation fileopt;
 
@@ -88,7 +85,7 @@ namespace VisionMonitor
 			Timer mytime;
 			mytime.tic();
 
-			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
+			Mat image = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
 
 			for (auto camera : cameras_)
 			{
@@ -97,19 +94,19 @@ namespace VisionMonitor
 				if (site == "TL" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 0, 1920, 1080));
+					imageROI = image(cv::Rect(0, 140, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 				if (site == "BL" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 1080, 1920, 1080));
+					imageROI = image(cv::Rect(0, 1080+140, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 				if (site == "BR" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(1920, 1080, 1920, 1080));
+					imageROI = image(cv::Rect(1920, 1080+140, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 			}
@@ -160,8 +157,10 @@ namespace VisionMonitor
 		if (object_detect_outimg.data != NULL)
 		{
 			cv::cvtColor(object_detect_outimg, object_detect_outimg, cv::COLOR_BGR2BGRA);
+			
+			InsertLogo(object_detect_outimg, map_image_, 140, 1920);
 			InsertLogo(object_detect_outimg, Title_image_, 0, 0);
-			InsertLogo(object_detect_outimg, map_image_, 40, 1445);
+
 			display_image_ = object_detect_outimg;
 			if (!skeleton_res.empty())
 			{
