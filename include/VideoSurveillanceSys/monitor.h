@@ -52,9 +52,13 @@ namespace VisionMonitor
 
 		std::thread* Monitor::startDetect();
 
-		void Monitor::detect();
+		void Monitor::detectThread();
 
-		void detectThread(Mat &input);
+		void detect(Mat &input);
+
+		std::thread* Monitor::startDisplay();
+
+		void Monitor::displayThread();
 
 	private:
 
@@ -126,7 +130,6 @@ namespace VisionMonitor
 
 
 
-
 		Timer						detect_time_;				/*! <物体检测时间 */
 		Timer						skeleton_time_;				/*! <骨骼检测时间 */
 		Timer						display_time_;				/*! <图片显示时间 */
@@ -152,10 +155,11 @@ namespace VisionMonitor
 		cv::Mat						display_image_;				/*! <显示图像 */
 		cv::Mat						skeleton_image_;			/*! <骨骼图像 */
 		cv::Mat						Title_image_;				/*! <标签图像 */
-		cv::Mat						Inform_car_image_;			/*! <标签图像 */
-		cv::Mat						Inform_human_image_;		/*! <标签图像 */
-		cv::Mat						Inform_good_image_;			/*! <标签图像 */
 		cv::Mat						map_image_;					/*! <地图 */
+		//线程处理
+		std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
+		std::mutex					image_mutex_;				/*! <输入图片锁 */
+
 
 	};
 

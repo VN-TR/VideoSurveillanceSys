@@ -73,20 +73,18 @@ namespace VisionMonitor
 			monitorThread_ = std::thread(&Monitor::monitorThread, this);
 		}
 	}
+	
 
-	std::thread* Monitor::startDetect()
+	std::thread* Monitor::startDisplay()
 	{
-		return new std::thread(&Monitor::detect, this);
+		return new std::thread(&Monitor::displayThread, this);
 	}
-	void Monitor::detect()
+
+	void Monitor::displayThread()
 	{
 		while (true)
 		{
-			Timer mytime;
-			mytime.tic();
-
-			Mat image = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
-
+			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
 			for (auto camera : cameras_)
 			{
 				string site = camera->getSite();
@@ -94,31 +92,68 @@ namespace VisionMonitor
 				if (site == "TL" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 140, 1920, 1080));
+					imageROI = image(cv::Rect(0, 0, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 				if (site == "BL" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 1080+140, 1920, 1080));
+					imageROI = image(cv::Rect(0, 1080, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 				if (site == "BR" && camera_img.data != NULL)
 				{
 					cv::Mat imageROI;
-					imageROI = image(cv::Rect(1920, 1080+140, 1920, 1080));
+					imageROI = image(cv::Rect(1920, 1080, 1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 			}
-			cout << "_time" << mytime.toc() << endl;
 
-			detectThread(image);
-			cout << "¼ÆËãÊ±¼ä" << mytime.toc() << endl;
-		
+			{
+				std::lock_guard<std::mutex> locker_image(image_mutex_);
+				msgRecvQueueMat_.push_back(image);
+				if (msgRecvQueueMat_.size() > 2)
+				{
+					msgRecvQueueMat_.pop_front();
+				}
+			}
+			if (image.data != NULL)
+			{
+				resize(image, image, Size(960, 540));
+				imshow("1", image);
+				waitKey(1);
+			}
+
 		}
 	}
 
-	void Monitor::detectThread(Mat &input)
+	std::thread* Monitor::startDetect()
+	{
+		return new std::thread(&Monitor::detectThread, this);
+	}
+	void Monitor::detectThread()
+	{
+		while (true)
+		{
+			Mat img;
+			{
+				std::lock_guard<std::mutex> locker_image(image_mutex_);
+				if (!msgRecvQueueMat_.empty())
+				{
+					img = msgRecvQueueMat_.back();
+				}
+			}
+			image_ = img;
+			if (image_.data != NULL)
+			{
+				detect(image_);
+			}
+
+
+		}
+	}
+
+	void Monitor::detect(Mat &input)
 	{
 		if (input.data != NULL)
 		{
@@ -156,12 +191,14 @@ namespace VisionMonitor
 	{
 		if (object_detect_outimg.data != NULL)
 		{
-			cv::cvtColor(object_detect_outimg, object_detect_outimg, cv::COLOR_BGR2BGRA);
-			
-			InsertLogo(object_detect_outimg, map_image_, 140, 1920);
-			InsertLogo(object_detect_outimg, Title_image_, 0, 0);
+			Mat outimage = object_detect_outimg;
 
-			display_image_ = object_detect_outimg;
+			cv::cvtColor(outimage, outimage, cv::COLOR_BGR2BGRA);
+			
+			InsertLogo(outimage, map_image_, 0, 1920);
+			InsertLogo(outimage, Title_image_, 0, 0);
+
+			display_image_ = outimage;
 			if (!skeleton_res.empty())
 			{
 				Mat skeleton_img = draw_skeleton_image(display_image_, skeleton_res);
@@ -590,8 +627,10 @@ namespace VisionMonitor
 		}
 		auto thread1 = startDetect();
 		threads.push_back(thread1);
+		auto thread2 = startDisplay();
+		threads.push_back(thread2);
 		
-		//
+
 		for (auto thread : threads)
 		{
 			thread->join();

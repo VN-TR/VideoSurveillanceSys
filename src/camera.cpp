@@ -24,7 +24,7 @@ using namespace std::chrono;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera() :frame_index_(0), path_loaded_(0){}
+	Camera::Camera() :frame_index_(0), path_loaded_(0),first_grab_(false){}
 	Camera::~Camera() {}
 	
 	
@@ -93,11 +93,11 @@ namespace VisionMonitor
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
 			{
-				/*Mat distortimg;
+				Mat distortimg;
 				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				grabimg = distortimg;
-				image_ = distortimg;*/
-				image_ = grabimg;
+				image_ = distortimg;
+				/*image_ = grabimg;*/
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat_.push_back(grabimg);
@@ -107,8 +107,13 @@ namespace VisionMonitor
 					}
 				}
 				cout << "camera " << getID() << " ×¥Í¼Ê±¼ä: " << grab_time_.toc() << "ms" << endl;
+				if (first_grab_ == false)
+					waitKey(5000);
+				first_grab_ = true;
+
 			}
-			Sleep(80);
+			Sleep(300);
+			
 		}
 	}
 

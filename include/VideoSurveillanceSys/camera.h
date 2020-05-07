@@ -258,6 +258,7 @@ namespace VisionMonitor
 
 			//标志位
 			bool                        path_loaded_;
+			bool						first_grab_;				
 
 			Timer						grab_time_;					/*! <抓图时间 */
 			//运行参数
