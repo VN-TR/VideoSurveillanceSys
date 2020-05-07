@@ -29,6 +29,7 @@ namespace VisionMonitor
 
 		object_detection_.Init();
 		opWrapper.start();
+		opWrapper.disableMultiThreading();
 
 		Title_image_ = cv::imread("./inform_image/1.png", CV_LOAD_IMAGE_UNCHANGED);
 		Inform_car_image_ = cv::imread("./inform_image/2.png", CV_LOAD_IMAGE_UNCHANGED);
@@ -84,7 +85,6 @@ namespace VisionMonitor
 	{
 		while (true)
 		{
-			
 			Timer mytime;
 			mytime.tic();
 
@@ -113,15 +113,10 @@ namespace VisionMonitor
 					camera_img.copyTo(imageROI);
 				}
 			}
-			resize(image, image, cv::Size(960, 540));
-			imshow("1", image);
-			waitKey(1);
-			vector<Saveditem> AI_result;
-			Mat display_image;
-			AI_result = object_detection_.DL_Detector(image, image, display_image);
-			imshow("2", display_image);
-			waitKey(1);
+			cout << "_time" << mytime.toc() << endl;
 
+			detectThread(image);
+			cout << "计算时间" << mytime.toc() << endl;
 		
 		}
 	}
@@ -134,13 +129,14 @@ namespace VisionMonitor
 			vector<Saveditem> AI_result;
 			Mat display_image;
 			AI_result = object_detection_.DL_Detector(input, input, display_image);
+			cout << "检测计算:" << detect_time_.toc() << endl;
 			bool havepeople = false;
 			for (auto res : AI_result)
 			{
-				cout << "res.itemClass" << res.itemClass << endl;
 				if (res.itemClass == "Human")
 				{
 					havepeople = true;
+					break;
 				}
 			}
 			vector<float> skeleton_res;
@@ -151,7 +147,11 @@ namespace VisionMonitor
 					skeleton_res = skeleton_estimation(input);
 				}
 			}
+			cout << "骨骼计算:" << detect_time_.toc() << endl;
+			Timer displaytime;
+			displaytime.tic();
 			display(display_image, skeleton_res, AI_result);
+			cout << "显示:" << displaytime.toc() << endl;
 		}
 	}
 
@@ -207,7 +207,7 @@ namespace VisionMonitor
 			}
 
 			string camera_id = "camera";
-			resize(display_image_, display_image_, Size(960, 540));
+			resize(display_image_, display_image_, Size(param_.image_output_width, param_.image_output_height));
 			imshow(camera_id, display_image_);
 			waitKey(1);
 		}
@@ -574,7 +574,6 @@ namespace VisionMonitor
 					image_.at<Vec4b>(i, j)[ii] = uchar(float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[ii]) * ratio
 						+ float(image_.at<Vec4b>(i, j)[ii]) * (1.f - ratio));
 				}
-
 			}
 	}
 

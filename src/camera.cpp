@@ -13,12 +13,14 @@
 #include "VideoSurveillanceSys/monitor.h"
 #include "VideoSurveillanceSys/file_operation.h"
 #include "VideoSurveillanceSys/common.h"
+#include <chrono>
 
 #include <io.h>
 #include <assert.h>
 #include <opencv2/opencv.hpp>
 #include "VideoSurveillanceSys/timer.h"
 using namespace std;
+using namespace std::chrono;
 // CODE
 namespace VisionMonitor
 {
@@ -91,11 +93,11 @@ namespace VisionMonitor
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
 			{
-				Mat distortimg;
+				/*Mat distortimg;
 				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				grabimg = distortimg;
-				image_ = distortimg;
-				
+				image_ = distortimg;*/
+				image_ = grabimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat_.push_back(grabimg);
@@ -104,10 +106,9 @@ namespace VisionMonitor
 						msgRecvQueueMat_.pop_front();
 					}
 				}
-
 				cout << "camera " << getID() << " ×¥Í¼Ê±¼ä: " << grab_time_.toc() << "ms" << endl;
 			}
-			waitKey(500);
+			Sleep(80);
 		}
 	}
 
