@@ -60,6 +60,12 @@ namespace VisionMonitor
 
 		void Monitor::displayThread();
 
+		std::thread* Monitor::startFusion();
+
+
+		void Monitor::fusionThread();
+
+
 	private:
 
 		/*!
@@ -97,11 +103,14 @@ namespace VisionMonitor
 		std::thread				monitorThread_;			/*!< 监测进程 */
 
 
-		void display(Mat &object_detect_outimg, vector<float> &skeleton_res, vector<Saveditem> &AI_result);
+		void display1(const Mat &object_detect_outimg,const vector<float> &skeleton_res,const vector<Saveditem> &AI_result);
+
+
+		void display(const Mat &object_detect_outimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result);
 
 		void filter(vector<float> &skeleton_res, vector<Saveditem> &AI_result);
 
-		void InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
+		Mat InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
 
 
@@ -129,7 +138,18 @@ namespace VisionMonitor
 		Mat draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint);
 
 
+		/*!
+		* @ brief  构建输入大图
+		* @ author ybc
+		* @ date   2020年5月7日
+		* @ param[in]  Mat & input_img
+		* @ return     void  
+		* @ note 
+		*/
+		void construct_input_img(Mat &input_img);
 
+
+		Timer						total_detect_time_;
 		Timer						detect_time_;				/*! <物体检测时间 */
 		Timer						skeleton_time_;				/*! <骨骼检测时间 */
 		Timer						display_time_;				/*! <图片显示时间 */
@@ -147,6 +167,7 @@ namespace VisionMonitor
 
 		//标志位
 		bool                        path_loaded_;
+		int							frame_count_;
 
 
 		//运行参数
@@ -159,8 +180,14 @@ namespace VisionMonitor
 		//线程处理
 		std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
 		std::mutex					image_mutex_;				/*! <输入图片锁 */
-
-
+		std::list<Mat>		        msgRecvQueue_AI_Mat_;		/*! <相机捕获的图像队列 */
+		std::mutex					AI_image_mutex_;			/*! <输入图片锁 */
+		std::list<vector<Saveditem>>msgRecvQueue_AI_Res_;			/*! <相机捕获的图像队列 */
+		std::mutex					AI_Res_mutex_;				/*! <输入图片锁 */
+		std::list<vector<float>>	msgRecvQueue_Skele_Res_;	/*! <相机捕获的图像队列 */
+		std::mutex					Skele_Res_mutex_;			/*! <输入图片锁 */
+		std::list<float>			msgRecvQueue_time_;	/*! <相机捕获的图像队列 */
+		std::mutex					time_mutex_;			/*! <输入图片锁 */
 	};
 
 

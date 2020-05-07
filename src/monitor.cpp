@@ -26,7 +26,7 @@ namespace VisionMonitor
 
 	bool Monitor::initiate()
 	{
-
+		frame_count_ = 0;
 		object_detection_.Init();
 		opWrapper.start();
 		opWrapper.disableMultiThreading();
@@ -74,40 +74,44 @@ namespace VisionMonitor
 		}
 	}
 	
-
-	std::thread* Monitor::startDisplay()
+	void Monitor::construct_input_img(Mat &input_img)
 	{
-		return new std::thread(&Monitor::displayThread, this);
+		
+		for (auto camera : cameras_)
+		{
+			string site = camera->getSite();
+			Mat camera_img = camera->getlastimage();
+			if (site == "TL" && camera_img.data != NULL)
+			{
+				cv::Mat imageROI;
+				imageROI = input_img(cv::Rect(0, 0, 1920, 1080));
+				camera_img.copyTo(imageROI);
+			}
+			if (site == "BL" && camera_img.data != NULL)
+			{
+				cv::Mat imageROI;
+				imageROI = input_img(cv::Rect(0, 1080, 1920, 1080));
+				camera_img.copyTo(imageROI);
+			}
+			if (site == "BR" && camera_img.data != NULL)
+			{
+				cv::Mat imageROI;
+				imageROI = input_img(cv::Rect(1920, 1080, 1920, 1080));
+				camera_img.copyTo(imageROI);
+			}
+		}
+	}
+	std::thread* Monitor::startFusion()
+	{
+		return new std::thread(&Monitor::fusionThread, this);
 	}
 
-	void Monitor::displayThread()
+	void Monitor::fusionThread()
 	{
 		while (true)
 		{
 			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
-			for (auto camera : cameras_)
-			{
-				string site = camera->getSite();
-				Mat camera_img = camera->getlastimage();
-				if (site == "TL" && camera_img.data != NULL)
-				{
-					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 0, 1920, 1080));
-					camera_img.copyTo(imageROI);
-				}
-				if (site == "BL" && camera_img.data != NULL)
-				{
-					cv::Mat imageROI;
-					imageROI = image(cv::Rect(0, 1080, 1920, 1080));
-					camera_img.copyTo(imageROI);
-				}
-				if (site == "BR" && camera_img.data != NULL)
-				{
-					cv::Mat imageROI;
-					imageROI = image(cv::Rect(1920, 1080, 1920, 1080));
-					camera_img.copyTo(imageROI);
-				}
-			}
+			construct_input_img(image);
 
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
@@ -123,9 +127,58 @@ namespace VisionMonitor
 				imshow("1", image);
 				waitKey(1);
 			}
-
+			Sleep(10);
 		}
 	}
+
+	std::thread* Monitor::startDisplay()
+	{
+		return new std::thread(&Monitor::displayThread, this);
+	}
+
+	void Monitor::displayThread()
+	{
+		while (true)
+		{
+
+			Mat display_image;
+			vector<Saveditem> AI_result;
+			vector<float> skeleton_res;
+			{
+				std::lock_guard<std::mutex> locker_AI_image(AI_image_mutex_);
+				if (!msgRecvQueue_AI_Mat_.empty())
+				{
+					display_image = msgRecvQueue_AI_Mat_.back();
+				}
+			}
+			{
+				std::lock_guard<std::mutex> locker_AI_res(AI_Res_mutex_);
+				if (!msgRecvQueue_AI_Res_.empty())
+				{
+					AI_result = msgRecvQueue_AI_Res_.back();
+				}
+			}
+			{
+				std::lock_guard<std::mutex> locker_Skele_Res(Skele_Res_mutex_);
+				if (!msgRecvQueue_Skele_Res_.empty())
+				{
+					skeleton_res = msgRecvQueue_Skele_Res_.back();
+				}
+			}
+
+			if (AI_result.size()>0 || frame_count_ >2)
+			{		
+				Timer displaytime;
+				displaytime.tic();
+				display(display_image, skeleton_res, AI_result);
+				cout << "ÏÔÊ¾:" << displaytime.toc() << endl;
+				Sleep(5);
+			}
+			Sleep(5);
+		}
+	}
+
+
 
 	std::thread* Monitor::startDetect()
 	{
@@ -146,10 +199,10 @@ namespace VisionMonitor
 			image_ = img;
 			if (image_.data != NULL)
 			{
+				total_detect_time_.tic();
 				detect(image_);
+				cout << "¼ì²â×ÜºÄÊ±" << total_detect_time_.toc() << endl;
 			}
-
-
 		}
 	}
 
@@ -161,6 +214,8 @@ namespace VisionMonitor
 			vector<Saveditem> AI_result;
 			Mat display_image;
 			AI_result = object_detection_.DL_Detector(input, input, display_image);
+			AI_result_ = AI_result;
+			Mat object_out_img = display_image;
 			cout << "¼ì²â¼ÆËã:" << detect_time_.toc() << endl;
 			bool havepeople = false;
 			for (auto res : AI_result)
@@ -172,6 +227,7 @@ namespace VisionMonitor
 				}
 			}
 			vector<float> skeleton_res;
+			
 			if (havepeople)
 			{
 				if (input.data != NULL)
@@ -179,30 +235,109 @@ namespace VisionMonitor
 					skeleton_res = skeleton_estimation(input);
 				}
 			}
-			cout << "¹Ç÷À¼ÆËã:" << detect_time_.toc() << endl;
-			Timer displaytime;
-			displaytime.tic();
-			display(display_image, skeleton_res, AI_result);
-			cout << "ÏÔÊ¾:" << displaytime.toc() << endl;
+			vector<float> ske_out = skeleton_res;
+			float cal_time = detect_time_.toc();
+			cout << "¹Ç÷À¼ÆËã:" <<  cal_time << endl;
+			{
+				std::lock_guard<std::mutex> locker_time(time_mutex_);
+				msgRecvQueue_time_.push_back(cal_time);
+				if (msgRecvQueue_time_.size() > 2)
+				{
+					msgRecvQueue_time_.pop_front();
+				}
+			}
+
+
+			{
+				std::lock_guard<std::mutex> locker_AI_image(AI_image_mutex_);
+				msgRecvQueue_AI_Mat_.push_back(object_out_img);
+				if (msgRecvQueue_AI_Mat_.size() > 2)
+				{
+					msgRecvQueue_AI_Mat_.pop_front();
+				}
+			}
+			{
+				std::lock_guard<std::mutex> locker_AI_res(AI_Res_mutex_);
+				msgRecvQueue_AI_Res_.push_back(AI_result_);
+				if (msgRecvQueue_AI_Res_.size() > 2)
+				{
+					msgRecvQueue_AI_Res_.pop_front();
+				}
+			}
+			{
+				std::lock_guard<std::mutex> locker_Skele_Res(Skele_Res_mutex_);
+				msgRecvQueue_Skele_Res_.push_back(ske_out);
+				if (msgRecvQueue_Skele_Res_.size() > 2)
+				{
+					msgRecvQueue_Skele_Res_.pop_front();
+				}
+			}
+			
+
 		}
 	}
 
-	void Monitor::display(Mat &object_detect_outimg, vector<float> &skeleton_res, vector<Saveditem> &AI_result)
+	void Monitor::display(const Mat &object_detect_outimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
+	{
+		if (frame_count_ > 2) 
+		{
+			Mat outimage = object_detect_outimg;
+			if (!skeleton_res.empty())
+			{
+				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_res);
+				outimage = skeleton_img;
+			}
+			Mat out_img = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
+			Mat imageROI = out_img(cv::Rect(0, 140, 3840, 2160));
+			outimage.copyTo(imageROI);
+			cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
+			InsertLogo(out_img, map_image_, 140, 1920);
+			InsertLogo(out_img, Title_image_, 0, 0);
+			float cal_time;
+			{
+				std::lock_guard<std::mutex> locker_time(time_mutex_);
+				if (!msgRecvQueue_time_.empty())
+				{
+					cal_time = msgRecvQueue_time_.back();
+				}
+			}
+			float fps_f = 1000 / cal_time;
+			string fps_s = "Fps" + to_string(fps_f);
+			fps_s.erase(8);
+			Point txt_pt(3300, 100);
+			putText(out_img, fps_s, txt_pt, FONT_HERSHEY_COMPLEX, 3, Scalar(0, 0, 255), 6, 8, 0);
+
+
+			resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
+			imshow("2", out_img);
+			waitKey(1);
+			Sleep(10);
+		}
+		cout << "frame_count_" << frame_count_ << endl;
+		frame_count_++;
+
+	}
+
+
+	void Monitor::display1(const Mat &object_detect_outimg,const vector<float> &skeleton_res,const vector<Saveditem> &AI_result)
 	{
 		if (object_detect_outimg.data != NULL)
 		{
-			Mat outimage = object_detect_outimg;
+			Mat outimage = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
+			Mat imageROI = outimage(cv::Rect(0, 140, 3840, 2160));
+			object_detect_outimg.copyTo(imageROI);
 
 			cv::cvtColor(outimage, outimage, cv::COLOR_BGR2BGRA);
 			
-			InsertLogo(outimage, map_image_, 0, 1920);
-			InsertLogo(outimage, Title_image_, 0, 0);
+			outimage = InsertLogo(outimage, map_image_, 140, 1920);
+			outimage = InsertLogo(outimage, Title_image_, 0, 0);
 
-			display_image_ = outimage;
+
+
 			if (!skeleton_res.empty())
 			{
-				Mat skeleton_img = draw_skeleton_image(display_image_, skeleton_res);
-				display_image_ = skeleton_img;
+				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_res);
+				outimage = skeleton_img;
 			}
 			if (!AI_result.empty())
 			{
@@ -234,17 +369,17 @@ namespace VisionMonitor
 						//}
 						if (res.itemClass == "Forklift")
 						{
-							circle(display_image_, pts, 10, Scalar(0, 255, 0), -1);
+							circle(outimage, pts, 10, Scalar(0, 255, 0), -1);
 						}
 					}
 
 				}
-				filter(skeleton_res, AI_result);
+				/*filter(skeleton_res, AI_result);*/
 			}
 
 			string camera_id = "camera";
-			resize(display_image_, display_image_, Size(param_.image_output_width, param_.image_output_height));
-			imshow(camera_id, display_image_);
+			resize(outimage, outimage, Size(param_.image_output_width, param_.image_output_height));
+			imshow(camera_id, outimage);
 			waitKey(1);
 		}
 	}
@@ -594,23 +729,23 @@ namespace VisionMonitor
 	}
 
 
-	void Monitor::InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart)
+	Mat Monitor::InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart)
 	{
-		image_ = image;
+		Mat img = image;
 
-		//image_.convertTo(image_, Title_image.type());
-
-		for (int i = rowStart; i < logoImage.rows + rowStart && i < image_.rows; i++)
-			for (int j = colStart; j < logoImage.cols + colStart && j < image_.cols; j++)
+		for (int i = rowStart; i < logoImage.rows + rowStart && i < img.rows; i++)
+			for (int j = colStart; j < logoImage.cols + colStart && j < img.cols; j++)
 			{
 
 				float ratio = float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[3]) / 255.f;
 				for (int ii = 0; ii < 3; ii++)
 				{
-					image_.at<Vec4b>(i, j)[ii] = uchar(float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[ii]) * ratio
-						+ float(image_.at<Vec4b>(i, j)[ii]) * (1.f - ratio));
+					img.at<Vec4b>(i, j)[ii] = uchar(float(logoImage.at<Vec4b>(i - rowStart, j - colStart)[ii]) * ratio
+						+ float(img.at<Vec4b>(i, j)[ii]) * (1.f - ratio));
 				}
 			}
+
+		return img;
 	}
 
 
@@ -625,6 +760,8 @@ namespace VisionMonitor
 			auto thread = camera->startGrab();
 			threads.push_back(thread);
 		}
+		auto thread0 = startFusion();
+		threads.push_back(thread0);
 		auto thread1 = startDetect();
 		threads.push_back(thread1);
 		auto thread2 = startDisplay();
