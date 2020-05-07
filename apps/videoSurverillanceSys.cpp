@@ -76,6 +76,7 @@ int main()
 	Monitor monitor;
 	monitor.initiate();
 	monitor.start();
+
 	getchar();
 	return 0;
 }
