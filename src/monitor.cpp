@@ -161,6 +161,8 @@ namespace VisionMonitor
 
 	void Monitor::displayThread()
 	{	
+		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
+		cvResizeWindow("VideoSurveillanceSys", 1280, 760);
 		while (true)
 		{
 			Mat display_image;
@@ -311,17 +313,21 @@ namespace VisionMonitor
 		}
 	}
 
-	void Monitor::display(const Mat &object_detect_outimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
+	void Monitor::display(const Mat &object_detect_outimg, 
+		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
 		if (frame_count_ > 2) 
 		{
 			Mat outimage = object_detect_outimg;
+			vector<float> skeleton_filter_res;
 			if (!skeleton_res.empty())
 			{
-				vector<float> skeleton_filter_res = filter(skeleton_res,AI_result);
+				skeleton_filter_res = filter(skeleton_res,AI_result);
 				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
 				outimage = skeleton_img;
 			}
+			outimage = drawmap(outimage, skeleton_filter_res, AI_result);
+
 			Mat out_img = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
 			Mat imageROI = out_img(cv::Rect(0, 140, 3840, 2160));
 			outimage.copyTo(imageROI);
@@ -341,17 +347,124 @@ namespace VisionMonitor
 			fps_s.erase(8);
 			Point txt_pt(3300, 100);
 			putText(out_img, fps_s, txt_pt, FONT_HERSHEY_COMPLEX, 3, Scalar(0, 0, 255), 6, 8, 0);
-
-			
 			resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
-			namedWindow("2", CV_WINDOW_OPENGL);
-			imshow("2", out_img);
+			namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
+			imshow("VideoSurveillanceSys", out_img);
 			waitKey(1);
 			Sleep(10);
 		}
 		cout << "frame_count_" << frame_count_ << endl;
 		frame_count_++;
 
+	}
+
+	Mat Monitor::drawmap(const Mat &displayimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
+	{
+		Mat outimage = displayimg;
+		if (!AI_result.empty())
+		{
+			for (auto res : AI_result)
+			{
+				if (res.itemClass == "Forklift")
+				{
+					//บ๓สำ
+					if (res.itemSite_X2 < 1925 && res.itemSite_Y2 < 1085)
+					{
+						float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+						float vb = res.itemSite_Y2;
+						float A = -0.036;
+						float B = 9.9;
+						float C = 2.45;
+						float D = -14.972;
+						float kx, ky;
+						kx = (va - 935.5) / 1164;
+						ky = (vb - 517.8) / 1164;
+						float z = -(D) / (A*kx + B * ky + C);
+						float x = kx * z;
+
+						Point camera_pt(2760, 550);
+						Point pts;
+						if (abs(x) < 10 && abs(z) < 20)
+						{
+							pts.x = 2760 - z * 40;
+							pts.y = 550 - x * 40;
+							circle(outimage, pts, 28, Scalar(0, 0, 0), -1);
+						}
+					}
+				}
+			}
+		}
+
+		if (!skeleton_res.empty())
+		{
+			int humanCount = skeleton_res.size() / 75;
+
+			for (auto i = 0; i < humanCount; i++)
+			{
+				bool filter_complete = false;
+				Point pt_right(0, 0);
+				if (skeleton_res[i * 75 + 14 * 3] != 0)
+				{
+					pt_right = Point((int)skeleton_res[i * 75 + 14 * 3] * param_.skeleton_desample_rate,
+						(int)skeleton_res[i * 75 + 14 * 3 + 1] * param_.skeleton_desample_rate);
+				}
+				Point pt_left(0, 0);
+				if (skeleton_res[i * 75 + 11 * 3] != 0)
+				{
+					pt_left = Point((int)skeleton_res[i * 75 + 11 * 3] * param_.skeleton_desample_rate,
+						(int)skeleton_res[i * 75 + 11 * 3 + 1] * param_.skeleton_desample_rate);
+				}
+				Point pt_human(0, 0);
+				if (pt_right.x != 0 && pt_left.x != 0)
+				{
+					pt_human.x = (pt_left.x + pt_right.x) / 2;
+					pt_human.y = (pt_left.y + pt_right.y) / 2;
+				}
+				if (pt_human.x < 1920 && pt_human.y < 1080)
+				{
+					float va = pt_human.x;
+					float vb = pt_human.y;
+					for (auto res : AI_result)
+					{
+						if (res.itemClass == "Forklift")
+						{
+							if (res.itemSite_X2 < 1925 && res.itemSite_Y2 < 1085)
+							{
+								float width = res.itemSite_X2 - res.itemSite_X1;
+								float hight = res.itemSite_Y2 - res.itemSite_Y1;
+								if (va < (res.itemSite_X2 + width/5) && va >(res.itemSite_X1 -width/5)
+									&& vb < (res.itemSite_Y2 + hight/5) && va >(res.itemSite_Y1-hight/5))
+								{
+									va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+									vb = res.itemSite_Y2;
+								}
+							}
+						}
+					}
+
+					float A = -0.036;
+					float B = 9.9;
+					float C = 2.45;
+					float D = -14.972;
+
+					float kx, ky;
+					kx = (va - 935.5) / 1164;
+					ky = (vb - 517.8) / 1164;
+					float z = -(D) / (A*kx + B * ky + C);
+					float x = kx * z;
+
+					Point camera_pt(2760, 550);
+					Point pts;
+					if (abs(x) < 10 && abs(z) < 20)
+					{
+						pts.x = 2760 - z * 40;
+						pts.y = 550 - x * 40;
+						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
+					}
+				}
+			}
+		}
+		return outimage;
 	}
 
 	vector<float> Monitor::filter(const vector<float> &skeleton_res,const vector<Saveditem> &AI_result)
