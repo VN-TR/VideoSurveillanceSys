@@ -108,11 +108,11 @@ namespace VisionMonitor
 
 		void display(const Mat &object_detect_outimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result);
 
-		void filter(vector<float> &skeleton_res, vector<Saveditem> &AI_result);
+		void filter1(vector<float> &skeleton_res, vector<Saveditem> &AI_result);
 
 		Mat InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
-
+		vector<float> filter(const vector<float> &skeleton_res,const vector<Saveditem> &AI_result);
 
 
 		/*!
@@ -184,9 +184,6 @@ namespace VisionMonitor
 		std::mutex					Cal_AI_image_mutex_;		/*! <输入图片锁 */
 		std::list<Mat>		        msgRecvQueue_Cal_Ske_Mat_;	/*! <相机捕获的图像队列 */
 		std::mutex					Cal_Ske_image_mutex_;		/*! <输入图片锁 */
-
-
-
 		std::list<Mat>		        msgRecvQueue_AI_Mat_;		/*! <相机捕获的图像队列 */
 		std::mutex					AI_image_mutex_;			/*! <输入图片锁 */
 		std::list<vector<Saveditem>>msgRecvQueue_AI_Res_;			/*! <相机捕获的图像队列 */

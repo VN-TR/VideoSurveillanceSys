@@ -73,6 +73,7 @@ using namespace VisionMonitor;
 //
 int main()
 {
+
 	Monitor monitor;
 	monitor.initiate();
 	monitor.start();

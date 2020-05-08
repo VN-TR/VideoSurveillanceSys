@@ -160,11 +160,9 @@ namespace VisionMonitor
 	}
 
 	void Monitor::displayThread()
-	{
-		
+	{	
 		while (true)
 		{
-
 			Mat display_image;
 			vector<Saveditem> AI_result;
 			vector<float> skeleton_res;
@@ -286,8 +284,6 @@ namespace VisionMonitor
 					msgRecvQueue_time_.pop_front();
 				}
 			}
-
-
 			{
 				std::lock_guard<std::mutex> locker_AI_image(AI_image_mutex_);
 				msgRecvQueue_AI_Mat_.push_back(object_out_img);
@@ -312,8 +308,6 @@ namespace VisionMonitor
 					msgRecvQueue_Skele_Res_.pop_front();
 				}
 			}
-			
-
 		}
 	}
 
@@ -324,7 +318,8 @@ namespace VisionMonitor
 			Mat outimage = object_detect_outimg;
 			if (!skeleton_res.empty())
 			{
-				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_res);
+				vector<float> skeleton_filter_res = filter(skeleton_res,AI_result);
+				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
 				outimage = skeleton_img;
 			}
 			Mat out_img = Mat(2300, 3840, CV_8UC3, cvScalar(255, 255, 255));
@@ -359,6 +354,50 @@ namespace VisionMonitor
 
 	}
 
+	vector<float> Monitor::filter(const vector<float> &skeleton_res,const vector<Saveditem> &AI_result)
+	{
+		vector<float> skeleton_filter_res;
+		int humanCount = skeleton_res.size() / 75;
+
+		for (auto i = 0; i < humanCount; i++)
+		{
+			vector<float> human_point;
+			float skeleton_x = 0;
+			float skeleton_y = 0;
+			int skeleton_count = 0;
+			for (auto j = 0; j < 25; j++)
+			{
+				human_point.push_back(skeleton_res[i * 75 + j * 3]);
+				human_point.push_back(skeleton_res[i * 75 + j * 3 + 1]);
+				human_point.push_back(skeleton_res[i * 75 + j * 3 + 2]);
+				if (skeleton_res[i * 75 + j * 3] != 0)
+				{
+					skeleton_x += skeleton_res[i * 75 + j * 3] * param_.skeleton_desample_rate;
+					skeleton_y += skeleton_res[i * 75 + j * 3 + 1 ] * param_.skeleton_desample_rate;
+					skeleton_count++;
+				}	
+			}
+			skeleton_x /= skeleton_count;
+			skeleton_y /= skeleton_count;
+			for (auto res : AI_result)
+			{
+				if (res.itemClass == "Human")
+				{
+					if (skeleton_x<res.itemSite_X2 && skeleton_x > res.itemSite_X1
+						&& skeleton_y<res.itemSite_Y2 && skeleton_y > res.itemSite_Y1)
+					{
+						for (int a =0 ;a < 75;a++)
+						{
+							skeleton_filter_res.push_back(human_point[a]);
+						}
+						human_point.clear();
+						break;
+					}
+				}
+			}
+		}
+		return skeleton_filter_res;
+	}
 
 	void Monitor::display1(const Mat &object_detect_outimg,const vector<float> &skeleton_res,const vector<Saveditem> &AI_result)
 	{
@@ -426,7 +465,7 @@ namespace VisionMonitor
 	}
 
 
-	void Monitor::filter(vector<float> &skeleton_res, vector<Saveditem> &AI_result)
+	void Monitor::filter1(vector<float> &skeleton_res, vector<Saveditem> &AI_result)
 	{
 		int humanCount = skeleton_res.size() / 75;
 
