@@ -112,8 +112,15 @@ namespace VisionMonitor
 				first_grab_ = true;
 
 			}
-			Sleep(200);
-			
+			if (param_.data_from == 0)
+			{
+				Sleep(200);
+			}
+			else
+			{
+				Sleep(10);
+			}
+	
 		}
 	}
 

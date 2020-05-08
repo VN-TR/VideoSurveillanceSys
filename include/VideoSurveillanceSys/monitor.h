@@ -54,7 +54,7 @@ namespace VisionMonitor
 
 		void Monitor::detectThread();
 
-		void detect(Mat &input);
+		void detect(Mat &input, Mat &AI_input, Mat &Ske_input);
 
 		std::thread* Monitor::startDisplay();
 
@@ -180,6 +180,13 @@ namespace VisionMonitor
 		//线程处理
 		std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
 		std::mutex					image_mutex_;				/*! <输入图片锁 */
+		std::list<Mat>		        msgRecvQueue_Cal_AI_Mat_;	/*! <相机捕获的图像队列 */
+		std::mutex					Cal_AI_image_mutex_;		/*! <输入图片锁 */
+		std::list<Mat>		        msgRecvQueue_Cal_Ske_Mat_;	/*! <相机捕获的图像队列 */
+		std::mutex					Cal_Ske_image_mutex_;		/*! <输入图片锁 */
+
+
+
 		std::list<Mat>		        msgRecvQueue_AI_Mat_;		/*! <相机捕获的图像队列 */
 		std::mutex					AI_image_mutex_;			/*! <输入图片锁 */
 		std::list<vector<Saveditem>>msgRecvQueue_AI_Res_;			/*! <相机捕获的图像队列 */

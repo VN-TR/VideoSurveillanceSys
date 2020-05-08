@@ -112,6 +112,12 @@ namespace VisionMonitor
 		{
 			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
 			construct_input_img(image);
+			Mat cal_AI_image = image.clone();
+			resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
+				cal_AI_image.rows / param_.object_detect_desample_rate));
+			Mat cal_Ske_image = image.clone();
+			resize(cal_Ske_image, cal_Ske_image, Size(cal_Ske_image.cols / param_.skeleton_desample_rate,
+				cal_Ske_image.rows / param_.skeleton_desample_rate));
 
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
@@ -121,6 +127,23 @@ namespace VisionMonitor
 					msgRecvQueueMat_.pop_front();
 				}
 			}
+			{
+				std::lock_guard<std::mutex> locker_Cal_AI_image(Cal_AI_image_mutex_);
+				msgRecvQueue_Cal_AI_Mat_.push_back(cal_AI_image);
+				if (msgRecvQueue_Cal_AI_Mat_.size() > 2)
+				{
+					msgRecvQueue_Cal_AI_Mat_.pop_front();
+				}
+			}
+			{
+				std::lock_guard<std::mutex> locker_cal_Ske_image(Cal_Ske_image_mutex_);
+				msgRecvQueue_Cal_Ske_Mat_.push_back(cal_Ske_image);
+				if (msgRecvQueue_Cal_Ske_Mat_.size() > 2)
+				{
+					msgRecvQueue_Cal_Ske_Mat_.pop_front();
+				}
+			}
+
 			if (image.data != NULL)
 			{
 				resize(image, image, Size(960, 540));
@@ -138,6 +161,7 @@ namespace VisionMonitor
 
 	void Monitor::displayThread()
 	{
+		
 		while (true)
 		{
 
@@ -196,24 +220,40 @@ namespace VisionMonitor
 					img = msgRecvQueueMat_.back();
 				}
 			}
+			Mat cal_AI_image;
+			{
+				std::lock_guard<std::mutex> locker_Cal_AI_image(Cal_AI_image_mutex_);
+				if (!msgRecvQueue_Cal_AI_Mat_.empty())
+				{
+					cal_AI_image = msgRecvQueue_Cal_AI_Mat_.back();
+				}
+			}
+			Mat cal_Ske_image;
+			{
+				std::lock_guard<std::mutex> locker_cal_Ske_image(Cal_Ske_image_mutex_);
+				if (!msgRecvQueue_Cal_Ske_Mat_.empty())
+				{
+					cal_Ske_image = msgRecvQueue_Cal_Ske_Mat_.back();
+				}
+			}
 			image_ = img;
 			if (image_.data != NULL)
 			{
 				total_detect_time_.tic();
-				detect(image_);
+				detect(image_,cal_AI_image,cal_Ske_image);
 				cout << "¼ì²â×ÜºÄÊ±" << total_detect_time_.toc() << endl;
 			}
 		}
 	}
 
-	void Monitor::detect(Mat &input)
+	void Monitor::detect(Mat &input, Mat &AI_input, Mat &Ske_input)
 	{
 		if (input.data != NULL)
 		{
 			detect_time_.tic();
 			vector<Saveditem> AI_result;
 			Mat display_image;
-			AI_result = object_detection_.DL_Detector(input, input, display_image);
+			AI_result = object_detection_.DL_Detector(AI_input, input, display_image);
 			AI_result_ = AI_result;
 			Mat object_out_img = display_image;
 			cout << "¼ì²â¼ÆËã:" << detect_time_.toc() << endl;
@@ -232,7 +272,7 @@ namespace VisionMonitor
 			{
 				if (input.data != NULL)
 				{
-					skeleton_res = skeleton_estimation(input);
+					skeleton_res = skeleton_estimation(Ske_input);
 				}
 			}
 			vector<float> ske_out = skeleton_res;
@@ -307,8 +347,9 @@ namespace VisionMonitor
 			Point txt_pt(3300, 100);
 			putText(out_img, fps_s, txt_pt, FONT_HERSHEY_COMPLEX, 3, Scalar(0, 0, 255), 6, 8, 0);
 
-
+			
 			resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
+			namedWindow("2", CV_WINDOW_OPENGL);
 			imshow("2", out_img);
 			waitKey(1);
 			Sleep(10);
@@ -451,13 +492,9 @@ namespace VisionMonitor
 
 	vector<float> Monitor::skeleton_estimation(const Mat input_image)
 	{
-		Mat skeleton_input_image = input_image;
-		resize(skeleton_input_image, skeleton_input_image,
-			Size(skeleton_input_image.cols / param_.skeleton_desample_rate,
-				skeleton_input_image.rows / param_.skeleton_desample_rate));
-
+	
 		vector<float> skeleton_point;
-		auto datumProcessed = opWrapper.emplaceAndPop(skeleton_input_image);
+		auto datumProcessed = opWrapper.emplaceAndPop(input_image);
 		if (datumProcessed != nullptr)
 		{
 			auto s = datumProcessed->at(0)->poseScores.toString();

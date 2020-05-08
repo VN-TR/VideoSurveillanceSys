@@ -45,7 +45,10 @@ namespace VisionMonitor
 	
 	vector<Saveditem> ObjectDetection::DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output)
 	{
+		Timer bbb;
+		bbb.tic();
 		Mat frame = img_input;
+
 		std::vector<unsigned char> input_data;
 		std::vector<TF_Tensor*> input_tensor;
 		std::vector<TF_Tensor*> output_tensor;
@@ -61,9 +64,11 @@ namespace VisionMonitor
 		output_tensor = { tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_), tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_),
 		 tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_), tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_) };
 
-
+		Timer ccc;
+		ccc.tic();
 		tfutil_.RunSession(input_ops, input_tensor.data(), input_tensor.size(),
 			output_ops, output_tensor.data(), output_tensor.size());
+		cout << "核心计算时间" << ccc.toc() << endl;
 
 		auto data = tfutil_.GetTensorsData<float>(output_tensor);
 
