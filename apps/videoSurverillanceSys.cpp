@@ -11,6 +11,7 @@
 #include<sstream>
 #include<string>
 #include<time.h> 
+#include "math.h"
 #include "VideoSurveillanceSys/timer.h"
 using namespace std;
 using namespace cv;
@@ -106,17 +107,17 @@ int main()
 
 //int main()
 //{
-//	float x1 = -0.98;
-//	float y1 = 0.669;
-//	float z1 = 3.38;
+//	float x1 = -1.318;
+//	float y1 = -0.726;
+//	float z1 = 6.6;
 //
-//	float x2 = -0.98;
-//	float y2 = -0.449;
-//	float z2 = 7.88;
+//	float x2 = 0.88;
+//	float y2 = -0.745;
+//	float z2 = 6.6;
 //
-//	float x3 = 1.22;
-//	float y3 = -0.441;
-//	float z3 = 7.88;
+//	float x3 = 1.1;
+//	float y3 = 0.778;
+//	float z3 = 2.7;
 //
 //	float A = (y2 - y1)*(z3 - z1) - (z2 - z1)*(y3 - y1);
 //	float B = (x3 - x1)*(z2 - z1) - (x2 - x1)*(z3 - z1);
@@ -132,12 +133,12 @@ int main()
 //
 //	cout << "D" << D << endl;
 //
-//	float x4 = 1.22;
-//	float y4 = -0.441;
-//	float z4;
+//	//float x4 = 1.22;
+//	//float y4 = -0.441;
+//	//float z4;
 //
-//	z4 = -(A*x4 + B * y4 + D) / C;
-//	cout << z4 << endl;
+//	//z4 = -(A*x4 + B * y4 + D) / C;
+//	//cout << z4 << endl;
 //
 //	while (true)
 //	{
@@ -147,12 +148,24 @@ int main()
 //		cin >> va >> vb;
 //		cout << "va=" << va << "vb=" << vb << endl;
 //		float kx, ky;
-//		kx = (va - 935.5) / 1164;
-//		ky = (vb - 517.8) / 1164;
+//		kx = (va - 961.5) / 1113;
+//		ky = (vb - 524.8) / 1114;
 //		float z = -(D) / (A*kx + B * ky + C);
-//		float x = kx * z;
-//		cout << "x" << x << "z" << z * 0.89 << endl;
+//		float x = kx * z ;
+//		float y = ky * z;
+//		cout << "x" << x << "   z" << z  << endl;
+//		float theta1 = acos(x/sqrt(x*x+z*z));
+//		cout << theta1 << endl;
+//		float theta2 = theta1 + 0.2526;
+//		//float theta2 = theta1 - 0.3867;
+//		x = cos(theta2) * sqrt(x*x + z*z);
+//		z = sin(theta2) * sqrt(x*x + z*z);
+//
+//		cout << "x" << x << "   z" << z*0.92  << endl;
 //	}
 //	getchar();
 //	return 0;
 //}
+
+
+

@@ -103,12 +103,8 @@ namespace VisionMonitor
 		std::thread				monitorThread_;			/*!< ¼à²â½ø³Ì */
 
 
-		void display1(const Mat &object_detect_outimg,const vector<float> &skeleton_res,const vector<Saveditem> &AI_result);
-
 
 		void display(const Mat &object_detect_outimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result);
-
-		void filter1(vector<float> &skeleton_res, vector<Saveditem> &AI_result);
 
 		Mat InsertLogo(Mat image, Mat logoImage, int rowStart, int colStart);
 
