@@ -94,10 +94,10 @@ namespace VisionMonitor
 			if (grabimg.data != NULL)
 			{
 				Mat distortimg;
-				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
+				/*cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
 				grabimg = distortimg;
-				image_ = distortimg;
-				/*image_ = grabimg;*/
+				image_ = distortimg;*/
+				image_ = grabimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat_.push_back(grabimg);
@@ -114,11 +114,11 @@ namespace VisionMonitor
 			}
 			if (param_.data_from == 0)
 			{
-				Sleep(200);
+				Sleep(50);
 			}
 			else
 			{
-				Sleep(10);
+				Sleep(2);
 			}
 	
 		}

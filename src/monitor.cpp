@@ -196,9 +196,8 @@ namespace VisionMonitor
 				displaytime.tic();
 				display(display_image, skeleton_res, AI_result);
 				cout << "ÏÔÊ¾:" << displaytime.toc() << endl;
-				Sleep(5);
 			}
-			Sleep(5);
+			Sleep(1);
 		}
 	}
 

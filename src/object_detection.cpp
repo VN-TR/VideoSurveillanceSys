@@ -102,6 +102,59 @@ namespace VisionMonitor
 			cv::Point tl, br;
 			tl = cv::Point((int)(boxes[4 * i + 1] * img.cols), (int)(boxes[4 * i] * img.rows));
 			br = cv::Point((int)(boxes[4 * i + 3] * img.cols), (int)(boxes[4 * i + 2] * img.rows));
+			cv::Point mid;
+			mid = cv::Point((int)((tl.x + br.x) / 2), (int)((tl.y + br.y) / 2));
+			//左上
+			if (mid.x < 1920 && mid.y < 1080)
+			{
+				if (br.x > 1920)
+				{
+					br = cv::Point(1919, br.y);
+				}
+				if (br.y > 1080)
+				{
+					br = cv::Point(br.x, 1079);
+				}
+			}
+			//左下
+			else if (mid.x < 1920 && mid.y >1080)
+			{
+				if (br.x > 1920)
+				{
+					br = cv::Point(1921, br.y);
+				}
+				if (tl.y < 1080)
+				{
+					tl = cv::Point(tl.x,1079);
+				}
+
+			}
+			//右上
+			else if (mid.x > 1920 && mid.y < 1080)
+			{
+				if (tl.x < 1920)
+				{
+					br = cv::Point(1919, tl.y);
+				}
+				if (br.y > 1080)
+				{
+					br = cv::Point(br.x, 1081);
+				}
+
+			}
+			//右下
+			else if (mid.x > 1920 && mid.y >1080)
+			{
+				if (tl.x < 1920)
+				{
+					br = cv::Point(1921, tl.y);
+				}		
+				if (tl.y < 1080)
+				{
+					tl = cv::Point(tl.x, 1081);
+				}
+			}
+		    
 			if (label == "Goods")
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 0), 6);
