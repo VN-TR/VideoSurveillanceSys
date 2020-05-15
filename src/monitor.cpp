@@ -74,6 +74,12 @@ namespace VisionMonitor
 		}
 	}
 	
+	Mat Monitor::getlastimage()
+	{
+		return display_image_;
+	}
+
+
 	void Monitor::construct_input_img(Mat &input_img)
 	{
 		
@@ -117,6 +123,7 @@ namespace VisionMonitor
 		while (true)
 		{
 			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
+
 			construct_input_img(image);
 			Mat cal_AI_image = image.clone();
 			resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
@@ -173,6 +180,7 @@ namespace VisionMonitor
 				if (!msgRecvQueue_AI_Mat_.empty())
 				{
 					display_image = msgRecvQueue_AI_Mat_.back();
+					msgRecvQueue_AI_Mat_.pop_back();
 				}
 			}
 			{
@@ -180,6 +188,7 @@ namespace VisionMonitor
 				if (!msgRecvQueue_AI_Res_.empty())
 				{
 					AI_result = msgRecvQueue_AI_Res_.back();
+					msgRecvQueue_AI_Res_.pop_back();
 				}
 			}
 			{
@@ -187,17 +196,18 @@ namespace VisionMonitor
 				if (!msgRecvQueue_Skele_Res_.empty())
 				{
 					skeleton_res = msgRecvQueue_Skele_Res_.back();
+					msgRecvQueue_Skele_Res_.pop_back();
 				}
 			}
 
-			if (AI_result.size()>0 || frame_count_ >2)
+			if (AI_result.size()>0)
 			{		
 				Timer displaytime;
 				displaytime.tic();
 				display(display_image, skeleton_res, AI_result);
 				cout << "ÏÔÊ¾:" << displaytime.toc() << endl;
 			}
-			else
+			else if (frame_count_ < 2)
 			{
 				Mat out_img = Mat(1080, 1920, CV_8UC3, cvScalar(255, 255, 255));
 				Point txt_pt(480, 550);
@@ -205,6 +215,12 @@ namespace VisionMonitor
 				putText(out_img, txt, txt_pt, FONT_HERSHEY_COMPLEX, 5, Scalar(0, 0, 255), 5, 8, 0);
 				namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 				imshow("VideoSurveillanceSys", out_img);
+				waitKey(1);
+			}
+			else
+			{
+				namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
+				imshow("VideoSurveillanceSys", getlastimage());
 				waitKey(1);
 			}
 			Sleep(1);
@@ -298,26 +314,14 @@ namespace VisionMonitor
 			{
 				std::lock_guard<std::mutex> locker_AI_image(AI_image_mutex_);
 				msgRecvQueue_AI_Mat_.push_back(object_out_img);
-				if (msgRecvQueue_AI_Mat_.size() > 2)
-				{
-					msgRecvQueue_AI_Mat_.pop_front();
-				}
 			}
 			{
 				std::lock_guard<std::mutex> locker_AI_res(AI_Res_mutex_);
 				msgRecvQueue_AI_Res_.push_back(AI_result_);
-				if (msgRecvQueue_AI_Res_.size() > 2)
-				{
-					msgRecvQueue_AI_Res_.pop_front();
-				}
 			}
 			{
 				std::lock_guard<std::mutex> locker_Skele_Res(Skele_Res_mutex_);
 				msgRecvQueue_Skele_Res_.push_back(ske_out);
-				if (msgRecvQueue_Skele_Res_.size() > 2)
-				{
-					msgRecvQueue_Skele_Res_.pop_front();
-				}
 			}
 		}
 	}
@@ -325,8 +329,7 @@ namespace VisionMonitor
 	void Monitor::display(const Mat &object_detect_outimg, 
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
-		if (frame_count_ > 2) 
-		{
+
 			Mat outimage = object_detect_outimg;
 			vector<float> skeleton_filter_res;
 			if (!skeleton_res.empty())
@@ -380,11 +383,12 @@ namespace VisionMonitor
 			//Point txt_pt(3300, 100);
 			//putText(out_img, fps_s, txt_pt, FONT_HERSHEY_COMPLEX, 3, Scalar(0, 0, 255), 6, 8, 0);
 			//resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
+			display_image_ = out_img;
 			namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 			imshow("VideoSurveillanceSys", out_img);
 			waitKey(1);
 
-		}
+
 
 		cout << "frame_count_" << frame_count_ << endl;
 		frame_count_++;

@@ -65,6 +65,7 @@ namespace VisionMonitor
 
 		void Monitor::fusionThread();
 
+		Mat getlastimage();
 
 	private:
 
