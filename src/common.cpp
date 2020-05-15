@@ -35,8 +35,10 @@ std::string  common::get_time()
 	SYSTEMTIME sys;
 	GetLocalTime(&sys);
 	char tmp[64] = { NULL };
-	sprintf_s(tmp, "%4d-%02d-%02d %02d:%02d:%02d.%03d", sys.wYear, sys.wMonth,
-		sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
+	//sprintf_s(tmp, "%4d/%02d/%02d %02d:%02d:%02d.%03d", sys.wYear, sys.wMonth,
+	//	sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
+	sprintf_s(tmp, "%4d/%02d/%02d %02d:%02d:%02d", sys.wYear, sys.wMonth,
+		sys.wDay, sys.wHour, sys.wMinute, sys.wSecond);
 	std::string time_str = tmp;
 	return time_str;
 }

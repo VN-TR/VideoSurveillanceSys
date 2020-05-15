@@ -88,7 +88,6 @@ namespace VisionMonitor
 			if (scores[i] > 0.8)
 				goodindex++;
 		}
-
 		Mat img = draw;
 		for (int i = 0; i < goodindex; i++)
 		{
@@ -121,11 +120,11 @@ namespace VisionMonitor
 			{
 				if (br.x > 1920)
 				{
-					br = cv::Point(1921, br.y);
+					br = cv::Point(1919, br.y);
 				}
 				if (tl.y < 1080)
 				{
-					tl = cv::Point(tl.x,1079);
+					tl = cv::Point(tl.x,1081);
 				}
 
 			}
@@ -134,11 +133,11 @@ namespace VisionMonitor
 			{
 				if (tl.x < 1920)
 				{
-					br = cv::Point(1919, tl.y);
+					br = cv::Point(1921, tl.y);
 				}
 				if (br.y > 1080)
 				{
-					br = cv::Point(br.x, 1081);
+					br = cv::Point(br.x, 1079);
 				}
 
 			}

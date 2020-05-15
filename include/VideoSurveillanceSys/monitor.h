@@ -143,7 +143,7 @@ namespace VisionMonitor
 		* @ note 
 		*/
 		void construct_input_img(Mat &input_img);
-
+		Mat InsertLogoJPG(Mat image, Mat logoImage, int rowStart, int colStart);
 
 		Timer						total_detect_time_;
 		Timer						detect_time_;				/*! <物体检测时间 */
