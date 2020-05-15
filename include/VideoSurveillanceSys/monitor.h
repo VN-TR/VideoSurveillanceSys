@@ -133,7 +133,8 @@ namespace VisionMonitor
 		* @ note
 		*/
 		Mat draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint);
-
+		void Monitor::locationPt(const float &va, const float &vb,
+			float &x, float &z);
 
 		/*!
 		* @ brief  构建输入大图
@@ -145,7 +146,7 @@ namespace VisionMonitor
 		*/
 		void construct_input_img(Mat &input_img);
 		Mat InsertLogoJPG(Mat image, Mat logoImage, int rowStart, int colStart);
-
+		Mat InsertLogoMid(Mat image, Mat logoImage, int rowMid, int colMid , int site);
 		Timer						total_detect_time_;
 		Timer						detect_time_;				/*! <物体检测时间 */
 		Timer						skeleton_time_;				/*! <骨骼检测时间 */
@@ -173,7 +174,8 @@ namespace VisionMonitor
 		cv::Mat						display_image_;				/*! <显示图像 */
 		cv::Mat						skeleton_image_;			/*! <骨骼图像 */
 		cv::Mat						Title_image_;				/*! <标签图像 */
-		cv::Mat						map_image_;					/*! <地图 */
+		cv::Mat						goods_image_;				/*! <地图 */
+		cv::Mat						forklift_image_;				/*! <地图 */
 		//线程处理
 		std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
 		std::mutex					image_mutex_;				/*! <输入图片锁 */

@@ -162,10 +162,6 @@ namespace VisionMonitor
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(255, 255, 255), 6);
 			}
-			else if (label == "Sun")
-			{
-				cv::rectangle(img, tl, br, cv::Scalar(230, 220, 150), 6);
-			}
 			else
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 255), 6);
@@ -190,12 +186,6 @@ namespace VisionMonitor
 			else if (label == "Human")
 			{
 				cv::rectangle(img, tl, brRect, cv::Scalar(255, 255, 255), -1);
-				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
-			}
-
-			else if (label == "Sun")
-			{
-				cv::rectangle(img, tl, brRect, cv::Scalar(230, 220, 150), -1);
 				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
 			}
 			else

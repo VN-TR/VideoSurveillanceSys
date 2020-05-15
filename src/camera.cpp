@@ -93,10 +93,10 @@ namespace VisionMonitor
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
 			{
-				/*Mat distortimg;
-				cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
-				grabimg = distortimg;
-				image_ = distortimg;*/
+				//Mat distortimg;
+				//cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
+				//grabimg = distortimg;
+				//image_ = distortimg;
 				image_ = grabimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
