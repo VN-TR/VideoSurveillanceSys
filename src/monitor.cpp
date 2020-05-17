@@ -400,16 +400,16 @@ namespace VisionMonitor
 				//后视
 				if (res.itemSite_X1 >= 1920 && res.itemSite_Y2 < 1080)
 				{
+					Point camera_pt(1587, 500);
+					float va = (res.itemSite_X1 + res.itemSite_X2) / 2 - 1920;
+					float vb = res.itemSite_Y2;
 					if (res.itemClass == "Goods")
 					{
-						float va = (res.itemSite_X1 + res.itemSite_X2) / 2 - 1920;
-						float vb = res.itemSite_Y2;
 						float x, z;
 						locationPt(va, vb, x, z);
-						cout << "x: " << x << "  z: " << z << endl;
-						Point camera_pt(1587, 500);
 						Point pts;
-						if (abs(x) < 10 && abs(z) < 16)
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
 						{
 							pts.x = camera_pt.x - x * 21.33;
 							pts.y = camera_pt.y + z * 21.33;
@@ -418,254 +418,239 @@ namespace VisionMonitor
 					}
 					else if (res.itemClass == "Forklift")
 					{
-						float va = (res.itemSite_X1 + res.itemSite_X2) / 2 - 1920;
-						float vb = res.itemSite_Y2;
 						float x, z;
 						locationPt(va, vb, x, z);
-						cout << "x: " << x << "  z: " << z << endl;
-						Point camera_pt(1587, 500);
 						Point pts;
-						if (abs(x) < 10 && abs(z) < 16)
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
 						{
 							pts.x = camera_pt.x - x * 21.33;
 							pts.y = camera_pt.y + z * 21.33;
 							InsertLogoMid(outimage, forklift_image_, pts.y, pts.x,0);
 						}
 					}
+				}
+				//前视
+				if (res.itemSite_X2 < 1920 && res.itemSite_Y2 < 1080)
+				{
+					Point camera_pt(1587, 455);
+					float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+					float vb = res.itemSite_Y2;
+					if (res.itemClass == "Goods")
+					{
+						float x, z;
+						locationPtFront(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, goods_image_, pts.y, pts.x, 1);
+						}
+					}
+					else if (res.itemClass == "Forklift")
+					{
+						float x, z;
+						locationPtFront(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, forklift_image_, pts.y, pts.x, 1);
+						}
+					}
+				}
 
+				//前左
+				if (res.itemSite_X2 < 1200 && res.itemSite_Y1 >= 1080)
+				{
+					Point camera_pt(1587, 455);
+					float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+					float vb = res.itemSite_Y2 - 1080;
+					if (res.itemClass == "Goods")
+					{
+						float x, z;
+						locationPtFrontLeft(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, goods_image_, pts.y, pts.x, 1);
+						}
+					}
+					else if (res.itemClass == "Forklift")
+					{
+						float x, z;
+						locationPtFrontLeft(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, forklift_image_, pts.y, pts.x, 1);
+						}
+					}
+				}
+				//前右
+				if (res.itemSite_X1 > 2640 && res.itemSite_Y1 >= 1080)
+				{
+					Point camera_pt(1587, 455);
+					float va = (res.itemSite_X1 + res.itemSite_X2) / 2 -1920;
+					float vb = res.itemSite_Y2 - 1080;
+					if (res.itemClass == "Goods")
+					{
+						float x, z;
+						locationPtFrontRight(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, goods_image_, pts.y, pts.x, 1);
+						}
+					}
+					else if (res.itemClass == "Forklift")
+					{
+						float x, z;
+						locationPtFrontRight(va, vb, x, z);
+						Point pts;
+						float dis_to_car = sqrt(x*x + z * z);
+						if (dis_to_car < 14 && dis_to_car>2)
+						{
+							pts.x = camera_pt.x + x * 21.33;
+							pts.y = camera_pt.y - z * 21.33;
+							InsertLogoMid(outimage, forklift_image_, pts.y, pts.x, 1);
+						}
+					}
 				}
 			}
 		}
-					//前左
-					//if (res.itemSite_X2 < 1925 && res.itemSite_Y1 > 1075)
-					//{	
-					//	float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-					//	float vb = res.itemSite_Y2;
-					//	float A = 0.0741;
-					//	float B = 8.5722;
-					//	float C = 3.35173;
-					//	float D = -15.8004;
-					//	float kx, ky;
-					//	kx = (va - 961.5) / 1113;
-					//	ky = (vb - 524.8-1080) / 1114;
-					//	float z = -(D) / (A*kx + B * ky + C);
-					//	float x = kx * z;
-					//	float theta1 = acos(x / sqrt(x*x + z * z));
-					//	float theta2 = theta1 + 0.2526;
-					//	x = cos(theta2) * sqrt(x*x + z * z);
-					//	z = sin(theta2) * sqrt(x*x + z * z);
-					//	Point camera_pt(3000, 550);
-					//	Point pts;
-					//	if (abs(x) < 10 && abs(z) < 20)
-					//	{
-					//		pts.x = 3200 + z*40;
-					//		pts.y = 550 + x*40;
-					//		circle(outimage, pts, 28, Scalar(0, 0, 0), -1);
-					//	}
-					//}
-					//前右
-					/*if (res.itemSite_X1 > 1915 && res.itemSite_Y1 > 1075)
+
+		if (!skeleton_res.empty())
+		{
+			int humanCount = skeleton_res.size() / 75;
+
+			for (auto i = 0; i < humanCount; i++)
+			{
+				bool filter_complete = false;
+				Point pt_right(0, 0);
+				if (skeleton_res[i * 75 + 14 * 3] != 0)
+				{
+					pt_right = Point((int)skeleton_res[i * 75 + 14 * 3] * param_.skeleton_desample_rate,
+						(int)skeleton_res[i * 75 + 14 * 3 + 1] * param_.skeleton_desample_rate);
+				}
+				Point pt_left(0, 0);
+				if (skeleton_res[i * 75 + 11 * 3] != 0)
+				{
+					pt_left = Point((int)skeleton_res[i * 75 + 11 * 3] * param_.skeleton_desample_rate,
+						(int)skeleton_res[i * 75 + 11 * 3 + 1] * param_.skeleton_desample_rate);
+				}
+				Point pt_human(0, 0);
+				if (pt_right.x != 0 && pt_left.x != 0)
+				{
+					pt_human.x = (pt_left.x + pt_right.x) / 2;
+					pt_human.y = (pt_left.y + pt_right.y) / 2;
+				}
+				else if (pt_left.x != 0)
+				{
+					pt_human.x = (pt_left.x) / 2;
+					pt_human.y = (pt_left.y) / 2;
+				}
+				else if (pt_right.x != 0)
+				{
+					pt_human.x = (pt_right.x) / 2;
+					pt_human.y = (pt_right.y) / 2;
+				}
+				float va = pt_human.x;
+				float vb = pt_human.y;
+				for (auto res : AI_result)
+				{
+					if (res.itemClass == "Forklift")
 					{
-						float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-						float vb = res.itemSite_Y2;
-						float A = 0.0741;
-						float B = 8.5722;
-						float C = 3.35173;
-						float D = -15.8004;
-						float kx, ky;
-						kx = (va - 961.5 -1920) / 1113;
-						ky = (vb - 524.8 - 1080) / 1114;
-						float z = -(D) / (A*kx + B * ky + C);
-						float x = kx * z;
-						float theta1 = acos(x / sqrt(x*x + z * z));
-						float theta2 = theta1 - 0.3867;
-						x = cos(theta2) * sqrt(x*x + z * z);
-						z = sin(theta2) * sqrt(x*x + z * z);
-						Point camera_pt(3000, 550);
-						Point pts;
-						if (abs(x) < 10 && abs(z) < 20)
+						float width = res.itemSite_X2 - res.itemSite_X1;
+						float hight = res.itemSite_Y2 - res.itemSite_Y1;
+						if (va < (res.itemSite_X2 + width / 5) && va >(res.itemSite_X1 - width / 5)
+							&& vb < (res.itemSite_Y2 + hight / 5) && vb >(res.itemSite_Y1 - hight / 5))
 						{
-							pts.x = 3200 + z * 40;
-							pts.y = 550 + x * 40;
-							circle(outimage, pts, 28, Scalar(0, 0, 0), -1);
+							va = (res.itemSite_X1 + res.itemSite_X2) / 2;
+							vb = res.itemSite_Y2;
 						}
-					}*/
-				
+					}
+				}
 
-
-		//if (!skeleton_res.empty())
-		//{
-		//	int humanCount = skeleton_res.size() / 75;
-
-		//	for (auto i = 0; i < humanCount; i++)
-		//	{
-		//		bool filter_complete = false;
-		//		Point pt_right(0, 0);
-		//		if (skeleton_res[i * 75 + 14 * 3] != 0)
-		//		{
-		//			pt_right = Point((int)skeleton_res[i * 75 + 14 * 3] * param_.skeleton_desample_rate,
-		//				(int)skeleton_res[i * 75 + 14 * 3 + 1] * param_.skeleton_desample_rate);
-		//		}
-		//		Point pt_left(0, 0);
-		//		if (skeleton_res[i * 75 + 11 * 3] != 0)
-		//		{
-		//			pt_left = Point((int)skeleton_res[i * 75 + 11 * 3] * param_.skeleton_desample_rate,
-		//				(int)skeleton_res[i * 75 + 11 * 3 + 1] * param_.skeleton_desample_rate);
-		//		}
-		//		Point pt_human(0, 0);
-		//		if (pt_right.x != 0 && pt_left.x != 0)
-		//		{
-		//			pt_human.x = (pt_left.x + pt_right.x) / 2;
-		//			pt_human.y = (pt_left.y + pt_right.y) / 2;
-		//		}
-		//		else if (pt_left.x != 0)
-		//		{
-		//			pt_human.x = (pt_left.x) / 2;
-		//			pt_human.y = (pt_left.y) / 2;
-		//		}
-		//		else if (pt_right.x != 0)
-		//		{
-		//			pt_human.x = (pt_right.x) / 2;
-		//			pt_human.y = (pt_right.y) / 2;
-		//		}
-		//		//后视
-		//		if (pt_human.x < 1920 && pt_human.y < 1080)
-		//		{
-		//			float va = pt_human.x;
-		//			float vb = pt_human.y;
-		//			for (auto res : AI_result)
-		//			{
-		//				if (res.itemClass == "Forklift")
-		//				{
-		//					if (res.itemSite_X2 < 1925 && res.itemSite_Y2 < 1085)
-		//					{
-		//						float width = res.itemSite_X2 - res.itemSite_X1;
-		//						float hight = res.itemSite_Y2 - res.itemSite_Y1;
-		//						if (va < (res.itemSite_X2 + width/5) && va >(res.itemSite_X1 -width/5)
-		//							&& vb < (res.itemSite_Y2 + hight/5) && vb >(res.itemSite_Y1-hight/5))
-		//						{
-		//							va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-		//							vb = res.itemSite_Y2;
-		//						}
-		//					}
-		//				}
-		//			}
-
-		//			float A = -0.036;
-		//			float B = 9.9;
-		//			float C = 2.45;
-		//			float D = -14.972;
-
-		//			float kx, ky;
-		//			kx = (va - 935.5) / 1164;
-		//			ky = (vb - 517.8) / 1164;
-		//			float z = -(D) / (A*kx + B * ky + C);
-		//			float x = kx * z;
-
-		//			Point camera_pt(2760, 550);
-		//			Point pts;
-		//			if (abs(x) < 10 && abs(z) < 20)
-		//			{
-		//				pts.x = 2760 - z * 40;
-		//				pts.y = 550 - x * 40;
-		//				circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
-		//			}
-		//		}
-
-		//		//前左
-		//		if (pt_human.x < 1920 && pt_human.y > 1080)
-		//		{
-		//			float va = pt_human.x;
-		//			float vb = pt_human.y;
-		//			for (auto res : AI_result)
-		//			{
-		//				if (res.itemClass == "Forklift")
-		//				{
-		//					if (res.itemSite_X2 < 1925 && res.itemSite_Y1 > 1075)
-		//					{						
-		//						float width = res.itemSite_X2 - res.itemSite_X1;
-		//						float hight = res.itemSite_Y2 - res.itemSite_Y1;
-		//						if (va < (res.itemSite_X2 + width / 5) && va >(res.itemSite_X1 - width / 5)
-		//							&& vb < (res.itemSite_Y2 + hight / 5) && vb >(res.itemSite_Y1 - hight / 5))
-		//						{
-
-		//							va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-		//							vb = res.itemSite_Y2;
-		//						}
-		//					}
-		//				}
-		//			}
-
-		//			float A = 0.0741;
-		//			float B = 8.5722;
-		//			float C = 3.35173;
-		//			float D = -15.8004;
-		//			float kx, ky;
-		//			kx = (va - 961.5) / 1113;
-		//			ky = (vb - 524.8 - 1080) / 1114;
-		//			float z = -(D) / (A*kx + B * ky + C);
-		//			float x = kx * z;
-		//			float theta1 = acos(x / sqrt(x*x + z * z));
-		//			float theta2 = theta1 + 0.2526;
-		//			x = cos(theta2) * sqrt(x*x + z * z);
-		//			z = sin(theta2) * sqrt(x*x + z * z);
-		//			Point camera_pt(3000, 550);
-		//			Point pts;
-		//			if (abs(x) < 10 && abs(z) < 20)
-		//			{
-		//				pts.x = 3200 + z * 40;
-		//				pts.y = 550 + x * 40;
-		//				circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
-		//			}
-		//		}
-
-		//		//前右
-		//		if (pt_human.x > 1920 && pt_human.y > 1080)
-		//		{
-		//			float va = pt_human.x;
-		//			float vb = pt_human.y;
-		//			for (auto res : AI_result)
-		//			{
-		//				if (res.itemClass == "Forklift")
-		//				{
-		//					if (res.itemSite_X1 > 1915 && res.itemSite_Y1 > 1075)
-		//					{
-		//						float width = res.itemSite_X2 - res.itemSite_X1;
-		//						float hight = res.itemSite_Y2 - res.itemSite_Y1;
-		//						if (va < (res.itemSite_X2 + width / 5) && va >(res.itemSite_X1 - width / 5)
-		//							&& vb < (res.itemSite_Y2 + hight / 5) && vb >(res.itemSite_Y1 - hight / 5))
-		//						{
-		//							va = (res.itemSite_X1 + res.itemSite_X2) / 2;
-		//							vb = res.itemSite_Y2;
-		//						}
-		//					}
-		//				}
-		//			}
-
-		//			float A = 0.0741;
-		//			float B = 8.5722;
-		//			float C = 3.35173;
-		//			float D = -15.8004;
-		//			float kx, ky;
-		//			kx = (va - 961.5 - 1920) / 1113;
-		//			ky = (vb - 524.8 - 1080) / 1114;
-		//			float z = -(D) / (A*kx + B * ky + C);
-		//			float x = kx * z;
-		//			float theta1 = acos(x / sqrt(x*x + z * z));
-		//			float theta2 = theta1 - 0.3867;
-		//			x = cos(theta2) * sqrt(x*x + z * z);
-		//			z = sin(theta2) * sqrt(x*x + z * z);
-		//			Point camera_pt(3000, 550);
-		//			Point pts;
-		//			if (abs(x) < 10 && abs(z) < 20)
-		//			{
-		//				pts.x = 3200 + z * 40;
-		//				pts.y = 550 + x * 40;
-		//				circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
-		//			}
-		//		}
-		//	}
-		//}
+				//后视
+				if (pt_human.x > 1920 && pt_human.y < 1080)
+				{
+					Point camera_pt(1587, 500);
+					va = va - 1920;
+					float x, z;
+					locationPt(va, vb, x, z);
+					Point pts;
+					float dis_to_car = sqrt(x*x + z * z);
+					if (dis_to_car < 14 && dis_to_car>2)
+					{
+						pts.x = camera_pt.x - x * 21.33;
+						pts.y = camera_pt.y + z * 21.33;
+						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
+					}
+				}
+				//前视
+				if (pt_human.x < 1920 && pt_human.y < 1080)
+				{
+					Point camera_pt(1587, 455);
+					float x, z;
+					locationPtFront(va, vb, x, z);
+					Point pts;
+					float dis_to_car = sqrt(x*x + z * z);
+					if (dis_to_car < 14 && dis_to_car>2)
+					{
+						pts.x = camera_pt.x + x * 21.33;
+						pts.y = camera_pt.y - z * 21.33;
+						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
+					}
+				}
+				//前左
+				if (pt_human.x < 1200 && pt_human.y > 1080)
+				{
+					Point camera_pt(1587, 455);
+					vb = vb - 1080;
+					float x, z;
+					locationPtFrontLeft(va, vb, x, z);
+					Point pts;
+					float dis_to_car = sqrt(x*x + z * z);
+					if (dis_to_car < 14 && dis_to_car>2)
+					{
+						pts.x = camera_pt.x + x * 21.33;
+						pts.y = camera_pt.y - z * 21.33;
+						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
+					}
+				}
+				//前右
+				if (pt_human.x > 2640 && pt_human.y > 1080)
+				{
+					Point camera_pt(1587, 455);
+					va = va - 1920;
+					vb = vb - 1080;
+					float x, z;
+					locationPtFrontRight(va, vb, x, z);
+					Point pts;
+					float dis_to_car = sqrt(x*x + z * z);
+					if (dis_to_car < 14 && dis_to_car>2)
+					{
+						pts.x = camera_pt.x + x * 21.33;
+						pts.y = camera_pt.y - z * 21.33;
+						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
+					}
+				}
+			}
+		}
 		return outimage;
 	}
 
@@ -681,6 +666,56 @@ namespace VisionMonitor
 		ky = (vb - 517.8) / 1164;
 		z = -(D) / (A*kx + B * ky + C);
 		x = kx * z;		
+	}
+
+	void Monitor::locationPtFront(const float &va, const float &vb,
+		float &x, float &z)
+	{
+		float A = 0.0741;
+		float B = 8.5722;
+		float C = 3.35173;
+		float D = -15.8004;
+		float kx, ky;
+		kx = (va - 961.5) / 1113;
+		ky = (vb - 524.8) / 1114;
+		z = -(D) / (A*kx + B * ky + C);
+		x = kx * z;
+	}
+
+	void Monitor::locationPtFrontLeft(const float &va, const float &vb,
+		float &x, float &z)
+	{
+		float A = 0.0741;
+		float B = 8.5722;
+		float C = 3.35173;
+		float D = -15.8004;
+		float kx, ky;
+		kx = (va - 961.5) / 1113;
+		ky = (vb - 524.8) / 1114;
+		z = -(D) / (A*kx + B * ky + C);
+		x = kx * z;
+		float theta1 = acos(x / sqrt(x*x + z * z));
+		float theta2 = theta1 + 1.3;
+		x = cos(theta2) * sqrt(x*x + z * z);
+		z = sin(theta2) * sqrt(x*x + z * z);
+	}
+
+	void Monitor::locationPtFrontRight(const float &va, const float &vb,
+		float &x, float &z)
+	{
+		float A = 0.0741;
+		float B = 8.5722;
+		float C = 3.35173;
+		float D = -15.8004;
+		float kx, ky;
+		kx = (va - 961.5) / 1113;
+		ky = (vb - 524.8) / 1114;
+		z = -(D) / (A*kx + B * ky + C);
+		x = kx * z;
+		float theta1 = acos(x / sqrt(x*x + z * z));
+		float theta2 = theta1 - 1.3;
+		x = cos(theta2) * sqrt(x*x + z * z);
+		z = sin(theta2) * sqrt(x*x + z * z);
 	}
 
 
@@ -1008,16 +1043,14 @@ namespace VisionMonitor
 		switch (site)
 		{
 		case 0:
-			img = InsertLogo(img, logoImage, rowMid, colMid - logoImage.cols);
+			img = InsertLogo(img, logoImage, rowMid, colMid - logoImage.cols/2);
 			break;
 		case 1:
-			img = InsertLogo(img, logoImage, rowMid, colMid + logoImage.cols);
+			img = InsertLogo(img, logoImage, rowMid-logoImage.rows, colMid - logoImage.cols / 2);
 			break;
 		default:
 			break;
-		}
-			
-		
+		}	
 		return img;
 	}
 

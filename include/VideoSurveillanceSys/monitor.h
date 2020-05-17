@@ -136,6 +136,14 @@ namespace VisionMonitor
 		void Monitor::locationPt(const float &va, const float &vb,
 			float &x, float &z);
 
+		void Monitor::locationPtFront(const float &va, const float &vb,
+			float &x, float &z);
+
+		void Monitor::locationPtFrontLeft(const float &va, const float &vb,
+			float &x, float &z);
+
+		void Monitor::locationPtFrontRight(const float &va, const float &vb,
+			float &x, float &z);
 		/*!
 		* @ brief  构建输入大图
 		* @ author ybc
