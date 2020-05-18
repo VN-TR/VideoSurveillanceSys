@@ -167,12 +167,14 @@ namespace VisionMonitor
 				cv::Mat decodedImage = cv::imdecode(rawData, 1);
 				if (decodedImage.data != NULL)
 				{
-					img = decodedImage;
+					img = decodedImage;	
 					if (param_.image_input_flip)
 					{
 						flip(img,img, param_.image_input_flipcode);
 					}
+
 					resize(img, img, Size(param_.image_input_width, param_.image_input_height));
+
 					if (params.image_log_switch && !params.data_collection_stage)
 					{
 						imwrite(PicName, img);

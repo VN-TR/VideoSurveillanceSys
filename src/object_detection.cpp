@@ -85,7 +85,7 @@ namespace VisionMonitor
 
 		for (int i = 0; i < scores.size(); i++)
 		{
-			if (scores[i] > 0.9)
+			if (scores[i] > 0.98)
 				goodindex++;
 		}
 		Mat img = draw;

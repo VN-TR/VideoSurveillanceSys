@@ -32,8 +32,8 @@ namespace VisionMonitor
 		opWrapper.disableMultiThreading();
 
 		Title_image_ = cv::imread("./inform_image/title.png", CV_LOAD_IMAGE_UNCHANGED);
-		goods_image_ = cv::imread("./inform_image/goods.png", CV_LOAD_IMAGE_UNCHANGED);
-		forklift_image_ = cv::imread("./inform_image/forklift.png", CV_LOAD_IMAGE_UNCHANGED);
+		goods_image_ = cv::imread("./inform_image/goods1.png", CV_LOAD_IMAGE_UNCHANGED);
+		forklift_image_ = cv::imread("./inform_image/forklift1.png", CV_LOAD_IMAGE_UNCHANGED);
 		FileOperation fileopt;
 
 		if (!loadParames())
@@ -122,42 +122,56 @@ namespace VisionMonitor
 	{
 		while (true)
 		{
-			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
-
-			construct_input_img(image);
-			Mat cal_AI_image = image.clone();
-			resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
-				cal_AI_image.rows / param_.object_detect_desample_rate));
-			Mat cal_Ske_image = image.clone();
-			resize(cal_Ske_image, cal_Ske_image, Size(cal_Ske_image.cols / param_.skeleton_desample_rate,
-				cal_Ske_image.rows / param_.skeleton_desample_rate));
-
+			bool nopic = false;
 			{
 				std::lock_guard<std::mutex> locker_image(image_mutex_);
-				msgRecvQueueMat_.push_back(image);
-				if (msgRecvQueueMat_.size() > 2)
+				if (msgRecvQueueMat_.empty())
 				{
-					msgRecvQueueMat_.pop_front();
+					nopic = true;
 				}
 			}
+			if (nopic == true)
 			{
-				std::lock_guard<std::mutex> locker_Cal_AI_image(Cal_AI_image_mutex_);
-				msgRecvQueue_Cal_AI_Mat_.push_back(cal_AI_image);
-				if (msgRecvQueue_Cal_AI_Mat_.size() > 2)
+				
+				Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
+
+				construct_input_img(image);
+				Mat cal_AI_image = image.clone();
+				cout << "param_.object_detect_desample_rate" << param_.object_detect_desample_rate << endl;
+				resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
+					cal_AI_image.rows / param_.object_detect_desample_rate));
+				Mat cal_Ske_image = image.clone();
+				resize(cal_Ske_image, cal_Ske_image, Size(cal_Ske_image.cols / param_.skeleton_desample_rate,
+					cal_Ske_image.rows / param_.skeleton_desample_rate));
+
 				{
-					msgRecvQueue_Cal_AI_Mat_.pop_front();
+					std::lock_guard<std::mutex> locker_image(image_mutex_);
+					msgRecvQueueMat_.push_back(image);
+					//if (msgRecvQueueMat_.size() > 2)
+					//{
+					//	msgRecvQueueMat_.pop_front();
+					//}
 				}
-			}
-			{
-				std::lock_guard<std::mutex> locker_cal_Ske_image(Cal_Ske_image_mutex_);
-				msgRecvQueue_Cal_Ske_Mat_.push_back(cal_Ske_image);
-				if (msgRecvQueue_Cal_Ske_Mat_.size() > 2)
 				{
-					msgRecvQueue_Cal_Ske_Mat_.pop_front();
+					std::lock_guard<std::mutex> locker_Cal_AI_image(Cal_AI_image_mutex_);
+					msgRecvQueue_Cal_AI_Mat_.push_back(cal_AI_image);
+					//if (msgRecvQueue_Cal_AI_Mat_.size() > 2)
+					//{
+					//	msgRecvQueue_Cal_AI_Mat_.pop_front();
+					//}
 				}
+				{
+					std::lock_guard<std::mutex> locker_cal_Ske_image(Cal_Ske_image_mutex_);
+					msgRecvQueue_Cal_Ske_Mat_.push_back(cal_Ske_image);
+					//if (msgRecvQueue_Cal_Ske_Mat_.size() > 2)
+					//{
+					//	msgRecvQueue_Cal_Ske_Mat_.pop_front();
+					//}
+				}
+
+				Sleep(1);
 			}
 
-			Sleep(1);
 		}
 	}
 
@@ -243,6 +257,7 @@ namespace VisionMonitor
 				if (!msgRecvQueueMat_.empty())
 				{
 					img = msgRecvQueueMat_.back();
+					msgRecvQueueMat_.pop_back();
 				}
 			}
 			Mat cal_AI_image;
@@ -251,6 +266,7 @@ namespace VisionMonitor
 				if (!msgRecvQueue_Cal_AI_Mat_.empty())
 				{
 					cal_AI_image = msgRecvQueue_Cal_AI_Mat_.back();
+					msgRecvQueue_Cal_AI_Mat_.pop_back();
 				}
 			}
 			Mat cal_Ske_image;
@@ -259,6 +275,7 @@ namespace VisionMonitor
 				if (!msgRecvQueue_Cal_Ske_Mat_.empty())
 				{
 					cal_Ske_image = msgRecvQueue_Cal_Ske_Mat_.back();
+					msgRecvQueue_Cal_Ske_Mat_.pop_back();
 				}
 			}
 			image_ = img;
@@ -358,25 +375,25 @@ namespace VisionMonitor
 		cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
 		InsertLogo(out_img, Title_image_, 0, 0);
 
-		string now_time = common::get_time();
-		Point txt_pt(1550, 40);
-		putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
+		//string now_time = common::get_time();
+		//Point txt_pt(1550, 40);
+		//putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
 
 		outimage = drawmap(out_img, skeleton_filter_res, AI_result);
 
-		float cal_time;
-		{
-			std::lock_guard<std::mutex> locker_time(time_mutex_);
-			if (!msgRecvQueue_time_.empty())
-			{
-				cal_time = msgRecvQueue_time_.back();
-			}
-		}
-		float fps_f = 1000 / cal_time;
-		string fps_s = "Fps" + to_string(fps_f);
-		fps_s.erase(8);
-		Point time_pt(1770, 90);
-		putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
+		//float cal_time;
+		//{
+		//	std::lock_guard<std::mutex> locker_time(time_mutex_);
+		//	if (!msgRecvQueue_time_.empty())
+		//	{
+		//		cal_time = msgRecvQueue_time_.back();
+		//	}
+		//}
+		//float fps_f = 1000 / cal_time;
+		//string fps_s = "Fps" + to_string(fps_f);
+		//fps_s.erase(8);
+		//Point time_pt(1770, 90);
+		//putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
 		//resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
 		display_image_ = out_img;
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
@@ -693,7 +710,7 @@ namespace VisionMonitor
 		z = -(D) / (A*kx + B * ky + C);
 		x = kx * z;
 		float theta1 = acos(x / sqrt(x*x + z * z));
-		float theta2 = theta1 + 1.3;
+		float theta2 = theta1 + 1.18;
 		x = cos(theta2) * sqrt(x*x + z * z);
 		z = sin(theta2) * sqrt(x*x + z * z);
 	}
@@ -711,7 +728,7 @@ namespace VisionMonitor
 		z = -(D) / (A*kx + B * ky + C);
 		x = kx * z;
 		float theta1 = acos(x / sqrt(x*x + z * z));
-		float theta2 = theta1 - 1.3;
+		float theta2 = theta1 - 0.94;
 		x = cos(theta2) * sqrt(x*x + z * z);
 		z = sin(theta2) * sqrt(x*x + z * z);
 	}
