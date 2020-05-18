@@ -189,14 +189,27 @@ namespace VisionMonitor
 		std::string getPWD(void);
 
 
+		/*!
+		* @ brief  设置相机在合并图中的位置
+		* @ author ybc
+		* @ date   2020年5月18日
+		* @ param[in]  std::string pwd
+		* @ return     void  
+		* @ note
+		*/
 		void setSite(std::string pwd);
 	
-		/**
-		  * @brief 获取设备注册密码
-		  * @return 返回设备注册密码
-		  * @retval std::string 设备注册密码
-		  */
+
+		/*!
+		* @ brief  获取相机在合并图片中的位置
+		* @ author ybc
+		* @ date   2020年5月18日
+		* @ return     std::string  
+		* @ note
+		*/
 		std::string getSite(void);
+
+
 		/**
 		  * @brief  获取摄像头内部参数
 		  * @date   2018年9月18日
@@ -204,12 +217,14 @@ namespace VisionMonitor
 		  */
 		cv::Mat	getIntrinsicMatrix();
 
+
 		/**
 		  * @brief  设置摄像头内部参数
 		  * @date   2018年9月18日
 		  * @param[in]  cv::Mat intrinsic_matrix  内部参数矩阵
 		  */
 		void setIntrinsicMatrix(cv::Mat &intrinsic_matrix);
+
 
 		/**
 		  * @brief  获取镜头畸变矩阵
@@ -220,6 +235,7 @@ namespace VisionMonitor
 		  */
 		cv::Mat	getDistortionCoeffs();
 
+
 		/**
 		  * @brief  设置镜头畸变参数矩阵
 		  * @author admin
@@ -228,12 +244,18 @@ namespace VisionMonitor
 		  */
 		void setDistortionCoeffs(cv::Mat &distortion_coeffs);
 
+
+		/*!
+		* @ brief  获取上一帧图片
+		* @ author ybc
+		* @ date   2020年5月18日
+		* @ return     cv::Mat  
+		* @ note
+		*/
 		Mat getlastimage();
 
+
 		private:
-
-
-
 			//相机参数
 			int							id_;						/*! <编号 */
 			int							port_;						/*! <端口号 */
@@ -241,7 +263,6 @@ namespace VisionMonitor
 			std::string					user_;					    /*! <用户名 */
 			std::string					pwd_;						/*! <密码 */
 			std::string					site_;						/*! <位置 */
-
 			cv::Mat						intrinsic_matrix_;			/*! <摄像头内部参数 */
 			cv::Mat						distortion_coeffs_;			/*! <镜头畸变参数 */
 
@@ -251,26 +272,22 @@ namespace VisionMonitor
 			LONG						lRealPlayHandle_;			/*! <播放句柄 */
 			HWND						hWnd_;						/*! <句柄 */
 
-
 			//配置参数
 			Params						param_;						/*! <配置参数表 */
 			std::vector<std::string>    test_image_path_;			/*! <离线数据位置 */
 
 			//标志位
 			bool                        path_loaded_;
-			bool						first_grab_;				
+			bool						first_grab_;				/*! <抓第一帧 */	
 
-			Timer						grab_time_;					/*! <抓图时间 */
 			//运行参数
+			Timer						grab_time_;					/*! <抓图时间 */
 			int							frame_index_;				/*! <帧数 */
 			cv::Mat						image_;						/*! <处理图像 */
-
 
 			//线程处理
 			std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
 			std::mutex					image_mutex_;				/*! <输入图片锁 */
-
-
 
 	}; // end class camera
 

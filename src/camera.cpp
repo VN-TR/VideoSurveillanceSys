@@ -278,6 +278,4 @@ namespace VisionMonitor
 	{
 		return image_;
 	}
-
-
 }

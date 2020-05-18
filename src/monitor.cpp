@@ -330,60 +330,58 @@ namespace VisionMonitor
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
 
-			Mat outimage = object_detect_outimg;
-			vector<float> skeleton_filter_res;
-			if (!skeleton_res.empty())
+		Mat outimage = object_detect_outimg;
+		vector<float> skeleton_filter_res;
+		if (!skeleton_res.empty())
+		{
+			skeleton_filter_res = filter(skeleton_res, AI_result);
+			Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
+			outimage = skeleton_img;
+		}
+
+		Mat TL_img = outimage(Rect(0, 0, 1920, 1080));
+		Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));
+		Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));
+		Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));
+
+		resize(TL_img, TL_img, Size(1240, 632));
+		resize(TR_img, TR_img, Size(412, 224));
+		resize(BL_img, BL_img, Size(616, 306));
+		resize(BR_img, BR_img, Size(616, 306));
+
+		Mat out_img = Mat(1080, 1920, CV_8UC3, cvScalar(255, 255, 255));
+		InsertLogoJPG(out_img, TL_img, 410, 4);
+		InsertLogoJPG(out_img, TR_img, 818, 4);
+		InsertLogoJPG(out_img, BL_img, 62, 4);
+		InsertLogoJPG(out_img, BR_img, 62, 628);
+
+		cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
+		InsertLogo(out_img, Title_image_, 0, 0);
+
+		string now_time = common::get_time();
+		Point txt_pt(1550, 40);
+		putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
+
+		outimage = drawmap(out_img, skeleton_filter_res, AI_result);
+
+		float cal_time;
+		{
+			std::lock_guard<std::mutex> locker_time(time_mutex_);
+			if (!msgRecvQueue_time_.empty())
 			{
-				skeleton_filter_res = filter(skeleton_res,AI_result);
-				Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
-				outimage = skeleton_img;
+				cal_time = msgRecvQueue_time_.back();
 			}
-
-			Mat TL_img = outimage(Rect(0, 0, 1920, 1080));
-			Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));
-			Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));
-			Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));
-
-			resize(TL_img, TL_img, Size(1240, 632));
-			resize(TR_img, TR_img, Size(412, 224));
-			resize(BL_img, BL_img, Size(616, 306));
-			resize(BR_img, BR_img, Size(616, 306));
-
-			Mat out_img = Mat(1080, 1920, CV_8UC3, cvScalar(255, 255, 255));
-			InsertLogoJPG(out_img, TL_img, 410, 4);
-			InsertLogoJPG(out_img, TR_img, 818, 4);
-			InsertLogoJPG(out_img, BL_img, 62, 4);
-			InsertLogoJPG(out_img, BR_img, 62, 628);
-
-			cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
-			InsertLogo(out_img, Title_image_, 0, 0);
-
-			string now_time = common::get_time();
-			Point txt_pt(1550, 40);
-			putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
-
-			outimage = drawmap(out_img, skeleton_filter_res, AI_result);
-
-			float cal_time;
-			{
-				std::lock_guard<std::mutex> locker_time(time_mutex_);
-				if (!msgRecvQueue_time_.empty())
-				{
-					cal_time = msgRecvQueue_time_.back();
-				}
-			}
-			float fps_f = 1000 / cal_time;
-			string fps_s = "Fps" + to_string(fps_f);
-			fps_s.erase(8);
-			Point time_pt(1770, 90);
-			putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
-			//resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
-			display_image_ = out_img;
-			namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
-			imshow("VideoSurveillanceSys", out_img);
-			waitKey(1);
-
-
+		}
+		float fps_f = 1000 / cal_time;
+		string fps_s = "Fps" + to_string(fps_f);
+		fps_s.erase(8);
+		Point time_pt(1770, 90);
+		putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
+		//resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
+		display_image_ = out_img;
+		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
+		imshow("VideoSurveillanceSys", out_img);
+		waitKey(1);
 
 		cout << "frame_count_" << frame_count_ << endl;
 		frame_count_++;
