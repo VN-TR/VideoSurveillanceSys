@@ -335,7 +335,7 @@ namespace VisionMonitor
 		Mat InsertLogoMid(Mat image, Mat logoImage, int rowMid, int colMid , int site);
 
 
-
+		VideoWriter writer;
 		private:
 
 		//检测时间
@@ -360,6 +360,7 @@ namespace VisionMonitor
 		bool						last_have_human_;			/*!< 上一帧有人 */
 
 		//运行参数
+		int							pic_count_;	
 		int							frame_count_;				/*! <帧数 */
 		cv::Mat						image_;						/*! <处理图像 */
 		cv::Mat						display_image_;				/*! <显示图像 */
@@ -385,6 +386,11 @@ namespace VisionMonitor
 
 		std::vector<std::shared_ptr<Camera>>cameras_;			/*!< 相机列表 */
 		std::thread					monitorThread_;				/*!< 监测进程 */
+
+		//输出视频
+		char filename[75]; //定义数组，其中数组大小大于等于图片的个数
+		int isColor = 1;   //如果为0 ，可输出灰度图像
+		int fps = 12;
 	};
 
 

@@ -209,4 +209,9 @@ namespace VisionMonitor
 		cout << "load  " + std::to_string(label_count) + " labelmap" << endl;
 	}
 
+	void ObjectDetection::Release()
+	{
+		tfutil_.CleanTFEnv();
+	}
+
 }

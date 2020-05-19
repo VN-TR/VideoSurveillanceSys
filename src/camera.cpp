@@ -24,7 +24,7 @@ using namespace std::chrono;
 // CODE
 namespace VisionMonitor
 {
-	Camera::Camera() :frame_index_(0), path_loaded_(0),first_grab_(false){}
+	Camera::Camera() :frame_index_(0), path_loaded_(0),first_grab_(false),close_(false){}
 	Camera::~Camera() {}
 	
 	
@@ -86,7 +86,7 @@ namespace VisionMonitor
 
 	void Camera::grabThread()
 	{
-		while (true)
+		while (!close_)
 		{
 			grab_time_.tic();
 			std::string pic_name;
@@ -118,7 +118,7 @@ namespace VisionMonitor
 			}
 			else
 			{
-				Sleep(20);
+				Sleep(40);
 			}
 	
 		}
@@ -157,10 +157,10 @@ namespace VisionMonitor
 			LONG iCurChan = lRealPlayHandle_;
 			sprintf_s(PicName, ".\\image_log\\camera%d\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
 
-			BYTE *pBuffer1 = new BYTE[3000 * 2000];
-			DWORD dwBufSize1 = 1920 * 1080 * 1.5;
+			BYTE *pBuffer1 = new BYTE[1920 * 1080 * 1.5];
+			DWORD dwBufSize1 = 1920 * 1080;
 			DWORD dwBufSize2;
-
+			
 			if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
 			{
 				cv::Mat rawData(1, dwBufSize2, CV_8UC1, (void*)pBuffer1);

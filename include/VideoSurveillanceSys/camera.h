@@ -34,6 +34,7 @@ namespace VisionMonitor
 		bool display_switch = true;		            /*!< 图像显示输出开关 */
 		bool show_FPS = false;						/*!< 打印帧数 */
 		bool show_current_time = true;				/*!< 打印当前时间 */
+		bool obtain_video = false;				/*!< 获取视频流信息 */
 		int data_from = 1;							/*!< 1：实时 0：静态数据./test_image */
 		int	connect_time = 2000;					/*!< 连接时间 */
 		int	reconnect_time = 10000;					/*!< 重连时间 */
@@ -49,6 +50,10 @@ namespace VisionMonitor
 		int image_output_height = 1080;				/*!< 显示图片高度 */
 		int skeleton_desample_rate = 4;				/*!< 骨骼识别降采样率 */
 		int object_detect_desample_rate = 2;		/*!< 物体检测降采样率 */
+		int obtain_video_FPS = 7;					/*!< 输出视频流FPS */
+		int obtain_video_color = 1;					/*!< 输出视频流颜色  0 - 灰度 1 - 彩色 */
+		int obtain_video_width = 1920;				/*!< 输出视频流宽度 */
+		int obtain_video_height = 1080;				/*!< 输出视频流高度 */
 	};
 
 
@@ -256,7 +261,7 @@ namespace VisionMonitor
 		*/
 		Mat getlastimage();
 
-
+		bool close_;
 		private:
 			//相机参数
 			int							id_;						/*! <编号 */

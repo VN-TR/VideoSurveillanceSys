@@ -6,26 +6,26 @@
 #include <assert.h>
 #include <corecrt_io.h>
 
-
-
 using namespace std;
 
+static bool close_all_thread = false;
 namespace VisionMonitor
 {
-
-	Monitor::Monitor()
+	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
+	Monitor::Monitor():pic_count_(0)
 	{
 
 	}
 	Monitor::~Monitor()
 	{
-
+		opWrapper.stop();
+		opWrapper.~WrapperT();
 	}
 
-	op::Wrapper opWrapper{ op::ThreadManagerMode::Asynchronous };
 
 	bool Monitor::initiate()
 	{
+
 		last_have_human_ = false;
 		frame_count_ = 0;
 		object_detection_.Init();
@@ -42,6 +42,8 @@ namespace VisionMonitor
 			return false;
 		}
 
+		int isColor = param_.obtain_video_color;   //如果为0 ，可输出灰度图像
+		int fps = param_.obtain_video_FPS;
 		fileopt.checkAndCreateDir(".\\image_log");
 
 		for (size_t i = 0; i < cameras_.size(); i++)
@@ -68,12 +70,39 @@ namespace VisionMonitor
 
 	void Monitor::start()
 	{
-		if (monitorThread_.get_id() == std::thread::id())
+		monitorThread();
+	}
+
+	void Monitor::monitorThread()
+	{
+		std::vector<std::thread*> threads;
+		for (auto camera : cameras_)
 		{
-			is_start = true;
-			monitorThread_ = std::thread(&Monitor::monitorThread, this);
+			auto thread = camera->startGrab();
+			threads.push_back(thread);
+		}
+		auto thread0 = startFusion();
+		threads.push_back(thread0);
+		auto thread1 = startDetect();
+		threads.push_back(thread1);
+		auto thread2 = startDisplay();
+		threads.push_back(thread2);
+
+		system("pause");
+		system("pause");
+		close_all_thread = true;
+		for (auto camera : cameras_)
+		{
+			camera->close_ = true;
+		}
+		for (auto thread : threads)
+		{
+			thread->join();
+			delete thread;
 		}
 	}
+
+
 	
 	Mat Monitor::getlastimage()
 	{
@@ -126,9 +155,10 @@ namespace VisionMonitor
 		return new std::thread(&Monitor::fusionThread, this);
 	}
 
+	
 	void Monitor::fusionThread()
 	{
-		while (true)
+		while (!close_all_thread)
 		{
 			bool nopic = false;
 			{
@@ -145,7 +175,6 @@ namespace VisionMonitor
 
 				construct_input_img(image);
 				Mat cal_AI_image = image.clone();
-				cout << "param_.object_detect_desample_rate" << param_.object_detect_desample_rate << endl;
 				resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
 					cal_AI_image.rows / param_.object_detect_desample_rate));
 				Mat cal_Ske_image = image.clone();
@@ -190,9 +219,12 @@ namespace VisionMonitor
 
 	void Monitor::displayThread()
 	{	
+		writer.open("video_out1.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), fps,
+			Size(param_.obtain_video_width, param_.obtain_video_height), isColor);
+
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		cvResizeWindow("VideoSurveillanceSys", 1920, 1080);
-		while (true)
+		while (!close_all_thread)
 		{
 			Mat display_image;
 			vector<Saveditem> AI_result;
@@ -247,6 +279,9 @@ namespace VisionMonitor
 			}
 			Sleep(1);
 		}
+
+		writer.release();
+
 	}
 
 
@@ -257,7 +292,7 @@ namespace VisionMonitor
 	}
 	void Monitor::detectThread()
 	{
-		while (true)
+		while (!close_all_thread)
 		{
 			Mat img;
 			{
@@ -294,6 +329,8 @@ namespace VisionMonitor
 				cout << "检测总耗时" << total_detect_time_.toc() << endl;
 			}
 		}
+		//opWrapper.stop();
+		//opWrapper.~WrapperT();
 	}
 
 	void Monitor::detect(Mat &input, Mat &AI_input, Mat &Ske_input)
@@ -420,9 +457,17 @@ namespace VisionMonitor
 		display_image_ = out_img;
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		imshow("VideoSurveillanceSys", out_img);
-		string writeDir = "display/" + to_string(frame_count_) + ".jpg";
-		imwrite(writeDir, out_img);
 		waitKey(1);
+		if (param_.obtain_video)
+		{
+			resize(out_img, out_img, Size(param_.obtain_video_width, param_.obtain_video_height));
+			cvtColor(out_img, out_img, CV_BGRA2BGR);
+			writer.write(out_img);
+
+		}
+
+
+		pic_count_++;
 
 		cout << "frame_count_" << frame_count_ << endl;
 		frame_count_++;
@@ -504,7 +549,7 @@ namespace VisionMonitor
 				}
 
 				//前左
-				if (res.itemSite_X2 < 1400 && res.itemSite_Y1 >= 1080)
+				if (res.itemSite_X2 < 1240 && res.itemSite_Y1 >= 1080)
 				{
 					Point camera_pt(1587, 455);
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
@@ -537,7 +582,7 @@ namespace VisionMonitor
 					}
 				}
 				//前右
-				if (res.itemSite_X1 > 2800 && res.itemSite_Y1 >= 1080)
+				if (res.itemSite_X1 > 2900 && res.itemSite_Y1 >= 1080)
 				{
 					Point camera_pt(1587, 455);
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2 -1920;
@@ -656,7 +701,7 @@ namespace VisionMonitor
 					}
 				}
 				//前左
-				if (pt_human.x < 1100 && pt_human.y > 1080)
+				if (pt_human.x < 1200 && pt_human.y > 1080)
 				{
 					Point camera_pt(1587, 455);
 					vb = vb - 1080;
@@ -672,7 +717,7 @@ namespace VisionMonitor
 					}
 				}
 				//前右
-				if (pt_human.x > 3000 && pt_human.y > 1080)
+				if (pt_human.x > 2850 && pt_human.y > 1080)
 				{
 					Point camera_pt(1587, 455);
 					va = va - 1920;
@@ -1175,30 +1220,7 @@ namespace VisionMonitor
 
 
 
-	void Monitor::monitorThread()
-	{
 
-		std::vector<std::thread*> threads;
-		for (auto camera : cameras_)
-		{
-			auto thread = camera->startGrab();
-			threads.push_back(thread);
-		}
-		auto thread0 = startFusion();
-		threads.push_back(thread0);
-		auto thread1 = startDetect();
-		threads.push_back(thread1);
-		auto thread2 = startDisplay();
-		threads.push_back(thread2);
-		
-
-		for (auto thread : threads)
-		{
-			thread->join();
-			delete thread;
-		}
-			
-	}
 
 	bool Monitor::loadParames()
 	{
@@ -1276,6 +1298,7 @@ namespace VisionMonitor
 		parameValue<bool>(parames_map, "bool", "display_switch", param_.display_switch);
 		parameValue<bool>(parames_map, "bool", "show_FPS", param_.show_FPS);
 		parameValue<bool>(parames_map, "bool", "show_current_time", param_.show_current_time);
+		parameValue<bool>(parames_map, "bool", "obtain_video", param_.obtain_video);
 		parameValue<int>(parames_map, "int", "data_from", param_.data_from);
 		parameValue<int>(parames_map, "int", "connect_time", param_.connect_time);
 		parameValue<int>(parames_map, "int", "reconect_time", param_.reconnect_time);
@@ -1292,6 +1315,10 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "image_output_height", param_.image_output_height);
 		parameValue<int>(parames_map, "int", "skeleton_desample_rate", param_.skeleton_desample_rate);
 		parameValue<int>(parames_map, "int", "object_detect_desample_rate", param_.object_detect_desample_rate);
+		parameValue<int>(parames_map, "int", "obtain_video_FPS", param_.obtain_video_FPS);
+		parameValue<int>(parames_map, "int", "obtain_video_color", param_.obtain_video_color);
+		parameValue<int>(parames_map, "int", "obtain_video_width", param_.obtain_video_width);
+		parameValue<int>(parames_map, "int", "obtain_video_height", param_.obtain_video_height);
 		delete params_doc;
 		delete cameras_doc;
 
