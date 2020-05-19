@@ -114,7 +114,7 @@ namespace VisionMonitor
 			}
 			if (param_.data_from == 0)
 			{
-				Sleep(50);
+				Sleep(100);
 			}
 			else
 			{

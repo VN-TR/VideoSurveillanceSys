@@ -26,6 +26,7 @@ namespace VisionMonitor
 
 	bool Monitor::initiate()
 	{
+		last_have_human_ = false;
 		frame_count_ = 0;
 		object_detection_.Init();
 		opWrapper.start();
@@ -309,14 +310,19 @@ namespace VisionMonitor
 				}
 			}
 			vector<float> skeleton_res;
-			
-			if (havepeople)
+
+			if (havepeople && last_have_human_)
 			{
 				if (input.data != NULL)
 				{
 					skeleton_res = skeleton_estimation(Ske_input);
 				}
 			}
+
+			last_have_human_ = havepeople;
+
+			
+
 			vector<float> ske_out = skeleton_res;
 			float cal_time = detect_time_.toc();
 			cout << "骨骼计算:" <<  cal_time << endl;
@@ -375,26 +381,25 @@ namespace VisionMonitor
 		cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
 		InsertLogo(out_img, Title_image_, 0, 0);
 
-		//string now_time = common::get_time();
-		//Point txt_pt(1550, 40);
-		//putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
+		string now_time = common::get_time();
+		Point txt_pt(1550, 40);
+		putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
 
 		outimage = drawmap(out_img, skeleton_filter_res, AI_result);
 
-		//float cal_time;
-		//{
-		//	std::lock_guard<std::mutex> locker_time(time_mutex_);
-		//	if (!msgRecvQueue_time_.empty())
-		//	{
-		//		cal_time = msgRecvQueue_time_.back();
-		//	}
-		//}
-		//float fps_f = 1000 / cal_time;
-		//string fps_s = "Fps" + to_string(fps_f);
-		//fps_s.erase(8);
-		//Point time_pt(1770, 90);
-		//putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
-		//resize(out_img, out_img, Size(param_.image_output_width, param_.image_output_height));
+		float cal_time;
+		{
+			std::lock_guard<std::mutex> locker_time(time_mutex_);
+			if (!msgRecvQueue_time_.empty())
+			{
+				cal_time = msgRecvQueue_time_.back();
+			}
+		}
+		float fps_f = 1000 / cal_time;
+		string fps_s = "Fps" + to_string(fps_f);
+		fps_s.erase(8);
+		Point time_pt(1770, 90);
+		putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
 		display_image_ = out_img;
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		imshow("VideoSurveillanceSys", out_img);
@@ -480,7 +485,7 @@ namespace VisionMonitor
 				}
 
 				//前左
-				if (res.itemSite_X2 < 1200 && res.itemSite_Y1 >= 1080)
+				if (res.itemSite_X2 < 1400 && res.itemSite_Y1 >= 1080)
 				{
 					Point camera_pt(1587, 455);
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
@@ -513,7 +518,7 @@ namespace VisionMonitor
 					}
 				}
 				//前右
-				if (res.itemSite_X1 > 2640 && res.itemSite_Y1 >= 1080)
+				if (res.itemSite_X1 > 2800 && res.itemSite_Y1 >= 1080)
 				{
 					Point camera_pt(1587, 455);
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2 -1920;
@@ -632,7 +637,7 @@ namespace VisionMonitor
 					}
 				}
 				//前左
-				if (pt_human.x < 1200 && pt_human.y > 1080)
+				if (pt_human.x < 1100 && pt_human.y > 1080)
 				{
 					Point camera_pt(1587, 455);
 					vb = vb - 1080;
@@ -648,7 +653,7 @@ namespace VisionMonitor
 					}
 				}
 				//前右
-				if (pt_human.x > 2640 && pt_human.y > 1080)
+				if (pt_human.x > 3000 && pt_human.y > 1080)
 				{
 					Point camera_pt(1587, 455);
 					va = va - 1920;

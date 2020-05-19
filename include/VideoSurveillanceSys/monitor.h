@@ -355,6 +355,7 @@ namespace VisionMonitor
 
 		//标志位
 		bool						is_start;					/*!< 监测已开启 */
+		bool						last_have_human_;			/*!< 上一帧有人 */
 
 		//运行参数
 		int							frame_count_;				/*! <帧数 */
