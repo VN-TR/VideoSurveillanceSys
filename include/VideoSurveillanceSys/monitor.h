@@ -215,6 +215,8 @@ namespace VisionMonitor
 		*/
 		vector<float> skeleton_estimation(const Mat input_image);
 
+		Mat Monitor::draw_object_detection_image(const Mat input_image, const vector<Saveditem> &AI_result);
+
 		/*!
 		* @ brief  根据骨骼点数据画骨骼图像
 		* @ author ybc

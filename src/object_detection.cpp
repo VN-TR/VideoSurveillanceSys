@@ -25,15 +25,12 @@ namespace VisionMonitor
 	void ObjectDetection::Init()
 	{
 		INPUT_NODES_ = { "image_tensor" };
-		OUTPUT_NODES_ = { "detection_boxes", "detection_scores", "detection_classes", "num_detections" };
+		OUTPUT_NODES_ = { "detection_boxes", "detection_scores", "detection_classes" };
 		//_OUTPUT_NODES = {"num_detections" };
 		MODEL_NAME_ = "models/object_detection/frozen_inference_graph.pb";
 		label_path_ = "models/object_detection/labelmap.pbtxt";
 		out_dims_ = { 1 };
 		tfutil_ = dnn_tensorflow();
-		//std::vector<uint8_t> config = { 0x32,0xc,0x9,0x0,0x0, 0x0, 0x0, 0x0,0x0, 0xd0,0x3f,0x2a,0x1,0x30 };
-		//std::vector<uint8_t> config = { 0x32,0xc,0x9,0xb8,0x1e, 0x85,0xeb, 0x51,0xb8, 0xbe,0x3f,0x2a,0x1,0x30 };  // 12%
-		//['0x32', '0xc', '0x9', '0x9a', '0x99', '0x99', '0x99', '0x99', '0x99', '0xc9', '0x3f', '0x2a', '0x1', '0x30']
 		std::vector<uint8_t> config = { 0x32,0xc,0x9,0x33,0x33, 0x33, 0x33, 0x33, 0x33, 0xc3,0x3f,0x2a,0x1,0x30 };
 		readLabelMap();
 		tfutil_.InitTFEnvironment(config);
@@ -45,8 +42,7 @@ namespace VisionMonitor
 	
 	vector<Saveditem> ObjectDetection::DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output)
 	{
-		Timer bbb;
-		bbb.tic();
+
 		Mat frame = img_input;
 
 		std::vector<unsigned char> input_data;
@@ -62,13 +58,10 @@ namespace VisionMonitor
 
 		input_tensor = { tfutil_.CreateTensor(TF_UINT8,input_dims_,input_data) };
 		output_tensor = { tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_), tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_),
-		 tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_), tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_) };
+		 tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_)};
 
-		Timer ccc;
-		ccc.tic();
 		tfutil_.RunSession(input_ops, input_tensor.data(), input_tensor.size(),
 			output_ops, output_tensor.data(), output_tensor.size());
-		cout << "核心计算时间" << ccc.toc() << endl;
 
 		auto data = tfutil_.GetTensorsData<float>(output_tensor);
 
@@ -88,7 +81,8 @@ namespace VisionMonitor
 			if (scores[i] > 0.98)
 				goodindex++;
 		}
-		Mat img = draw;
+		img_output = draw;
+
 		for (int i = 0; i < goodindex; i++)
 		{
 			string label;
@@ -99,8 +93,8 @@ namespace VisionMonitor
 			}
 
 			cv::Point tl, br;
-			tl = cv::Point((int)(boxes[4 * i + 1] * img.cols), (int)(boxes[4 * i] * img.rows));
-			br = cv::Point((int)(boxes[4 * i + 3] * img.cols), (int)(boxes[4 * i + 2] * img.rows));
+			tl = cv::Point((int)(boxes[4 * i + 1] * img_output.cols), (int)(boxes[4 * i] * img_output.rows));
+			br = cv::Point((int)(boxes[4 * i + 3] * img_output.cols), (int)(boxes[4 * i + 2] * img_output.rows));
 			cv::Point mid;
 			mid = cv::Point((int)((tl.x + br.x) / 2), (int)((tl.y + br.y) / 2));
 			//左上
@@ -153,49 +147,9 @@ namespace VisionMonitor
 					tl = cv::Point(tl.x, 1081);
 				}
 			}
-		    
-			if (label == "Goods")
-			{
-				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 0), 6);
-			}
-			else if (label == "Human")
-			{
-				cv::rectangle(img, tl, br, cv::Scalar(255, 255, 255), 6);
-			}
-			else
-			{
-				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 255), 6);
-			}
-
-
-			// Ceiling the score down to 3 decimals (weird!)
-			float scoreRounded = floorf(scores[i] * 1000) / 10;
-			string scoreString = to_string(scoreRounded).substr(0, 4) + "%";
-			string caption = label + " (" + scoreString + ")";
-
-			// Adding caption of type "LABEL (X.XXX)" to the top-left corner of the bounding box
-			int fontCoeff = 25;
-			cv::Point brRect = cv::Point(tl.x + caption.length() * fontCoeff / 1.6, tl.y + fontCoeff);
-
-			cv::Point textCorner = cv::Point(tl.x, tl.y + fontCoeff * 0.9);
-			if (label == "Goods")
-			{
-				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 0), -1);
-				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
-			}
-			else if (label == "Human")
-			{
-				cv::rectangle(img, tl, brRect, cv::Scalar(255, 255, 255), -1);
-				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
-			}
-			else
-			{
-				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 255), -1);
-				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
-			}
-			itemInfomation_.push_back(Saveditem(img, label, tl.x, br.x, tl.y, br.y));
+			itemInfomation_.push_back(Saveditem(label, tl.x, br.x, tl.y, br.y,scores[i]));
 		}
-		img_output = img;
+
 		boxes.clear();
 		scores.clear();
 		classes.clear();

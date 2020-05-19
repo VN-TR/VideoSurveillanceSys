@@ -353,7 +353,7 @@ namespace VisionMonitor
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
 
-		Mat outimage = object_detect_outimg;
+		Mat outimage = draw_object_detection_image(object_detect_outimg,AI_result);
 		vector<float> skeleton_filter_res;
 		if (!skeleton_res.empty())
 		{
@@ -818,6 +818,56 @@ namespace VisionMonitor
 		return skeleton_point;
 	}
 
+	Mat Monitor::draw_object_detection_image(const Mat input_image, const vector<Saveditem> &AI_result)
+	{
+		Mat img = input_image;
+		for (auto res : AI_result)
+		{
+			Point tl(res.itemSite_X1, res.itemSite_Y1);
+			Point br(res.itemSite_X2, res.itemSite_Y2);
+			if (res.itemClass == "Goods")
+			{
+				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 0), 6);
+			}
+			else if (res.itemClass == "Human")
+			{
+				cv::rectangle(img, tl, br, cv::Scalar(255, 255, 255), 6);
+			}
+			else
+			{
+				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 255), 6);
+			}
+
+			
+			float scoreRounded = floorf(res.itemscore * 1000) / 10;
+			string scoreString = to_string(scoreRounded).substr(0, 4) + "%";
+			string caption = res.itemClass + " (" + scoreString + ")";
+
+			// Adding caption of type "LABEL (X.XXX)" to the top-left corner of the bounding box
+			int fontCoeff = 25;
+			cv::Point brRect = cv::Point(tl.x + caption.length() * fontCoeff / 1.6, tl.y + fontCoeff);
+
+			cv::Point textCorner = cv::Point(tl.x, tl.y + fontCoeff * 0.9);
+			if (res.itemClass == "Goods")
+			{
+				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 0), -1);
+				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
+			}
+			else if (res.itemClass == "Human")
+			{
+				cv::rectangle(img, tl, brRect, cv::Scalar(255, 255, 255), -1);
+				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
+			}
+			else
+			{
+				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 255), -1);
+				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
+			}
+
+		}
+
+		return img;
+	}
 
 	Mat Monitor::draw_skeleton_image(const Mat input_image, const vector<float> skeletonPoint)
 	{
