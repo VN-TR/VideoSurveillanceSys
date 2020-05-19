@@ -83,11 +83,18 @@ namespace VisionMonitor
 
 	void Monitor::construct_input_img(Mat &input_img)
 	{
-		
+
 		for (auto camera : cameras_)
 		{
 			string site = camera->getSite();
 			Mat camera_img = camera->getlastimage();
+			//if (frame_count_ > 3)
+			//{
+			//	Mat distort_img;
+			//	cv::undistort(camera_img,distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
+			//	camera_img = distort_img;
+			//}
+			
 			if (site == "TL" && camera_img.data != NULL)
 			{
 				cv::Mat imageROI;
@@ -352,7 +359,7 @@ namespace VisionMonitor
 	void Monitor::display(const Mat &object_detect_outimg, 
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
-
+		
 		Mat outimage = draw_object_detection_image(object_detect_outimg,AI_result);
 		vector<float> skeleton_filter_res;
 		if (!skeleton_res.empty())
@@ -413,6 +420,8 @@ namespace VisionMonitor
 		display_image_ = out_img;
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		imshow("VideoSurveillanceSys", out_img);
+		string writeDir = "display/" + to_string(frame_count_) + ".jpg";
+		imwrite(writeDir, out_img);
 		waitKey(1);
 
 		cout << "frame_count_" << frame_count_ << endl;
