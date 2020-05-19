@@ -381,25 +381,35 @@ namespace VisionMonitor
 		cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
 		InsertLogo(out_img, Title_image_, 0, 0);
 
-		string now_time = common::get_time();
-		Point txt_pt(1550, 40);
-		putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
+		//打印实时时间
+		if (param_.show_current_time)
+		{
+			string now_time = common::get_time();
+			Point txt_pt(1550, 40);
+			putText(out_img, now_time, txt_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(255, 255, 255), 2, 8, 0);
+		}
 
+		//将物体定位到地图中
 		outimage = drawmap(out_img, skeleton_filter_res, AI_result);
 
-		float cal_time;
+		//打印当前帧数到右上角
+		if (param_.show_FPS)
 		{
-			std::lock_guard<std::mutex> locker_time(time_mutex_);
-			if (!msgRecvQueue_time_.empty())
+			float cal_time;
 			{
-				cal_time = msgRecvQueue_time_.back();
+				std::lock_guard<std::mutex> locker_time(time_mutex_);
+				if (!msgRecvQueue_time_.empty())
+				{
+					cal_time = msgRecvQueue_time_.back();
+				}
 			}
+			float fps_f = 1000 / cal_time;
+			string fps_s = "Fps" + to_string(fps_f);    
+			fps_s.erase(8);
+			Point time_pt(1770, 90);
+			putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
 		}
-		float fps_f = 1000 / cal_time;
-		string fps_s = "Fps" + to_string(fps_f);
-		fps_s.erase(8);
-		Point time_pt(1770, 90);
-		putText(out_img, fps_s, time_pt, FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 2, 8, 0);
+
 		display_image_ = out_img;
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		imshow("VideoSurveillanceSys", out_img);
@@ -1205,6 +1215,8 @@ namespace VisionMonitor
 		parameValue<bool>(parames_map, "bool", "data_collection_stage", param_.data_collection_stage);
 		parameValue<bool>(parames_map, "bool", "image_log_switch", param_.image_log_switch);
 		parameValue<bool>(parames_map, "bool", "display_switch", param_.display_switch);
+		parameValue<bool>(parames_map, "bool", "show_FPS", param_.show_FPS);
+		parameValue<bool>(parames_map, "bool", "show_current_time", param_.show_current_time);
 		parameValue<int>(parames_map, "int", "data_from", param_.data_from);
 		parameValue<int>(parames_map, "int", "connect_time", param_.connect_time);
 		parameValue<int>(parames_map, "int", "reconect_time", param_.reconnect_time);

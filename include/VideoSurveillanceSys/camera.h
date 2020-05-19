@@ -32,6 +32,8 @@ namespace VisionMonitor
 		int data_collection_interval = 2000;		/*!< 采集数据间隔 /毫秒 */
 		bool image_log_switch = true;		        /*!< 记录图片日志开关 */
 		bool display_switch = true;		            /*!< 图像显示输出开关 */
+		bool show_FPS = false;						/*!< 打印帧数 */
+		bool show_current_time = true;				/*!< 打印当前时间 */
 		int data_from = 1;							/*!< 1：实时 0：静态数据./test_image */
 		int	connect_time = 2000;					/*!< 连接时间 */
 		int	reconnect_time = 10000;					/*!< 重连时间 */
