@@ -25,22 +25,25 @@ namespace VisionMonitor
 
 	bool Monitor::initiate()
 	{
+		if (!loadParames())
+		{
+			return false;
+		}
 
-		last_have_human_ = false;
-		frame_count_ = 0;
-		object_detection_.Init();
-		opWrapper.start();
-		opWrapper.disableMultiThreading();
+		if (!param_.data_collection_stage)
+		{
+			last_have_human_ = false;
+			frame_count_ = 0;
+			object_detection_.Init();
+			opWrapper.start();
+			opWrapper.disableMultiThreading();
+		}
+
 
 		Title_image_ = cv::imread("./inform_image/title.png", CV_LOAD_IMAGE_UNCHANGED);
 		goods_image_ = cv::imread("./inform_image/goods1.png", CV_LOAD_IMAGE_UNCHANGED);
 		forklift_image_ = cv::imread("./inform_image/forklift1.png", CV_LOAD_IMAGE_UNCHANGED);
 		FileOperation fileopt;
-
-		if (!loadParames())
-		{
-			return false;
-		}
 
 		int isColor = param_.obtain_video_color;   //如果为0 ，可输出灰度图像
 		int fps = param_.obtain_video_FPS;
@@ -81,12 +84,16 @@ namespace VisionMonitor
 			auto thread = camera->startGrab();
 			threads.push_back(thread);
 		}
-		auto thread0 = startFusion();
-		threads.push_back(thread0);
-		auto thread1 = startDetect();
-		threads.push_back(thread1);
-		auto thread2 = startDisplay();
-		threads.push_back(thread2);
+		if (!param_.data_collection_stage)
+		{
+			auto thread0 = startFusion();
+			threads.push_back(thread0);
+			auto thread1 = startDetect();
+			threads.push_back(thread1);
+			auto thread2 = startDisplay();
+			threads.push_back(thread2);
+		}
+
 
 		system("pause");
 		system("pause");

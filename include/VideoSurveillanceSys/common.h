@@ -80,6 +80,9 @@ public:
 	  */
 	static __int64 get_time_stamp();
 
+
+	static int64_t  common::getSysTimeMicros();
+
 	/**
 	  * @brief  按指定字符分割字符串
 	  * @author bcyang@VisionNav.com

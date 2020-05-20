@@ -53,6 +53,24 @@ __int64  common::get_time_stamp()
 }
 
 
+	int64_t  common::getSysTimeMicros()
+	{
+		// 从1601年1月1日0:0:0:000到1970年1月1日0:0:0:000的时间(单位100ns)
+#define EPOCHFILETIME   (116444736000000000UL)
+		FILETIME ft;
+		LARGE_INTEGER li;
+		int64_t tt = 0;
+		GetSystemTimeAsFileTime(&ft);
+		li.LowPart = ft.dwLowDateTime;
+		li.HighPart = ft.dwHighDateTime;
+		// 从1970年1月1日0:0:0:000到现在的微秒数(UTC时间)
+		tt = (li.QuadPart - EPOCHFILETIME) / 10;
+		return tt;
+	}
+
+
+
+
 
 std::vector<std::string>  common::split(const std::string& str, const std::string& delim)
 {

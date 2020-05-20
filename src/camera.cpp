@@ -93,10 +93,6 @@ namespace VisionMonitor
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
 			{
-				//Mat distortimg;
-				//cv::undistort(grabimg, distortimg, getIntrinsicMatrix(), getDistortionCoeffs());
-				//grabimg = distortimg;
-				//image_ = distortimg;
 				image_ = grabimg;
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
@@ -118,7 +114,8 @@ namespace VisionMonitor
 			}
 			else
 			{
-				Sleep(40);
+				if (!param_.data_collection_stage)
+					Sleep(40);
 			}
 	
 		}
@@ -153,12 +150,12 @@ namespace VisionMonitor
 		}
 		else
 		{
-			int64_t time = common::get_time_stamp();
+			int64_t time = common::getSysTimeMicros();
 			LONG iCurChan = lRealPlayHandle_;
 			sprintf_s(PicName, ".\\image_log\\camera%d\\%I64d_ch%02ld.jpg", id_, time, iCurChan);
 
 			BYTE *pBuffer1 = new BYTE[1920 * 1080 * 1.5];
-			DWORD dwBufSize1 = 1920 * 1080;
+			DWORD dwBufSize1 = 1920 * 1080*1.5;
 			DWORD dwBufSize2;
 			
 			if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
