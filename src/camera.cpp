@@ -76,6 +76,7 @@ namespace VisionMonitor
 		struPlayInfo.bBlocked = param.bBlocked; //0- 非阻塞取流，1- 阻塞取流
 
 		lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
+
 		return true;
 	}
 
@@ -86,6 +87,12 @@ namespace VisionMonitor
 
 	void Camera::grabThread()
 	{
+		//char* VideoName = "1.mp4";
+		//NET_DVR_SaveRealData(lRealPlayHandle_, VideoName);
+		//Sleep(100000);
+		//NET_DVR_StopSaveRealData(lRealPlayHandle_);
+		//return;
+
 		while (!close_)
 		{
 			grab_time_.tic();
@@ -110,12 +117,11 @@ namespace VisionMonitor
 			}
 			if (param_.data_from == 0)
 			{
-				Sleep(100);
+				Sleep(400);
 			}
 			else
 			{
-				if (!param_.data_collection_stage)
-					Sleep(40);
+				Sleep(60);
 			}
 	
 		}
@@ -276,5 +282,12 @@ namespace VisionMonitor
 	Mat Camera::getlastimage()
 	{
 		return image_;
+	}
+
+
+	void Camera::HKClean()
+	{
+		NET_DVR_Logout(lUserID_);
+		NET_DVR_Cleanup();
 	}
 }

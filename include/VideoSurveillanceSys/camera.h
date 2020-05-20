@@ -34,7 +34,7 @@ namespace VisionMonitor
 		bool display_switch = true;		            /*!< 图像显示输出开关 */
 		bool show_FPS = false;						/*!< 打印帧数 */
 		bool show_current_time = true;				/*!< 打印当前时间 */
-		bool obtain_video = false;				/*!< 获取视频流信息 */
+		bool obtain_video = false;				    /*!< 获取视频流信息 */
 		int data_from = 1;							/*!< 1：实时 0：静态数据./test_image */
 		int	connect_time = 2000;					/*!< 连接时间 */
 		int	reconnect_time = 10000;					/*!< 重连时间 */
@@ -54,6 +54,7 @@ namespace VisionMonitor
 		int obtain_video_color = 1;					/*!< 输出视频流颜色  0 - 灰度 1 - 彩色 */
 		int obtain_video_width = 1920;				/*!< 输出视频流宽度 */
 		int obtain_video_height = 1080;				/*!< 输出视频流高度 */
+		bool only_show_front = false;				/*!< 只显示前视 */
 	};
 
 
@@ -87,6 +88,9 @@ namespace VisionMonitor
 		* @ note
 		*/
 		bool HKinit(const Params &param);
+
+
+		void HKClean();
 
 		/*!
 		* @ brief  抓图

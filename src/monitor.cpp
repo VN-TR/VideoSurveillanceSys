@@ -64,10 +64,7 @@ namespace VisionMonitor
 				std::cout << "Fail" << std::endl;
 				return false;
 			}
-
 		}
-
-
 		return true;
 	}
 
@@ -94,13 +91,13 @@ namespace VisionMonitor
 			threads.push_back(thread2);
 		}
 
-
-		system("pause");
 		system("pause");
 		close_all_thread = true;
 		for (auto camera : cameras_)
 		{
 			camera->close_ = true;
+			if (param_.data_from)
+				camera->HKClean();
 		}
 		for (auto thread : threads)
 		{
@@ -191,26 +188,26 @@ namespace VisionMonitor
 				{
 					std::lock_guard<std::mutex> locker_image(image_mutex_);
 					msgRecvQueueMat_.push_back(image);
-					//if (msgRecvQueueMat_.size() > 2)
-					//{
-					//	msgRecvQueueMat_.pop_front();
-					//}
+					if (msgRecvQueueMat_.size() > 2)
+					{
+						msgRecvQueueMat_.pop_front();
+					}
 				}
 				{
 					std::lock_guard<std::mutex> locker_Cal_AI_image(Cal_AI_image_mutex_);
 					msgRecvQueue_Cal_AI_Mat_.push_back(cal_AI_image);
-					//if (msgRecvQueue_Cal_AI_Mat_.size() > 2)
-					//{
-					//	msgRecvQueue_Cal_AI_Mat_.pop_front();
-					//}
+					if (msgRecvQueue_Cal_AI_Mat_.size() > 2)
+					{
+						msgRecvQueue_Cal_AI_Mat_.pop_front();
+					}
 				}
 				{
 					std::lock_guard<std::mutex> locker_cal_Ske_image(Cal_Ske_image_mutex_);
 					msgRecvQueue_Cal_Ske_Mat_.push_back(cal_Ske_image);
-					//if (msgRecvQueue_Cal_Ske_Mat_.size() > 2)
-					//{
-					//	msgRecvQueue_Cal_Ske_Mat_.pop_front();
-					//}
+					if (msgRecvQueue_Cal_Ske_Mat_.size() > 2)
+					{
+						msgRecvQueue_Cal_Ske_Mat_.pop_front();
+					}
 				}
 
 				Sleep(1);
@@ -261,14 +258,14 @@ namespace VisionMonitor
 				}
 			}
 
-			if (AI_result.size()>0)
+			if (display_image.cols >0)
 			{		
 				Timer displaytime;
 				displaytime.tic();
 				display(display_image, skeleton_res, AI_result);
 				cout << "ÏÔÊ¾:" << displaytime.toc() << endl;
 			}
-			else if (frame_count_ < 2)
+			else if (frame_count_ < 1)
 			{
 				Mat out_img = Mat(1080, 1920, CV_8UC3, cvScalar(255, 255, 255));
 				Point txt_pt(480, 550);
@@ -280,15 +277,12 @@ namespace VisionMonitor
 			}
 			else
 			{
-				namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
-				imshow("VideoSurveillanceSys", getlastimage());
-				waitKey(1);
+				continue;
+				Sleep(10);
 			}
 			Sleep(1);
 		}
-
 		writer.release();
-
 	}
 
 
@@ -336,8 +330,6 @@ namespace VisionMonitor
 				cout << "¼ì²â×ÜºÄÊ±" << total_detect_time_.toc() << endl;
 			}
 		}
-		//opWrapper.stop();
-		//opWrapper.~WrapperT();
 	}
 
 	void Monitor::detect(Mat &input, Mat &AI_input, Mat &Ske_input)
@@ -360,6 +352,7 @@ namespace VisionMonitor
 					break;
 				}
 			}
+			//Sleep(100);
 			vector<float> skeleton_res;
 
 			if (havepeople && last_have_human_)
@@ -367,6 +360,7 @@ namespace VisionMonitor
 				if (input.data != NULL)
 				{
 					skeleton_res = skeleton_estimation(Ske_input);
+					//Sleep(100);
 				}
 			}
 
@@ -417,6 +411,18 @@ namespace VisionMonitor
 		Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));
 		Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));
 		Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));
+
+		if (param_.only_show_front)
+		{
+			Mat single_img = TL_img;
+			namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
+			imshow("VideoSurveillanceSys", single_img);
+			waitKey(1);
+			resize(single_img, single_img, Size(param_.obtain_video_width, param_.obtain_video_height));
+			writer.write(single_img);
+			frame_count_++;
+			return;
+		}
 
 		resize(TL_img, TL_img, Size(1240, 632));
 		resize(TR_img, TR_img, Size(412, 224));
@@ -472,9 +478,6 @@ namespace VisionMonitor
 			writer.write(out_img);
 
 		}
-
-
-		pic_count_++;
 
 		cout << "frame_count_" << frame_count_ << endl;
 		frame_count_++;
@@ -1326,6 +1329,7 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "obtain_video_color", param_.obtain_video_color);
 		parameValue<int>(parames_map, "int", "obtain_video_width", param_.obtain_video_width);
 		parameValue<int>(parames_map, "int", "obtain_video_height", param_.obtain_video_height);
+		parameValue<bool>(parames_map, "bool", "only_show_front", param_.only_show_front);
 		delete params_doc;
 		delete cameras_doc;
 
