@@ -48,9 +48,9 @@ namespace VisionMonitor
 		{
 			char VideoName[256] = { 0 };
 			int64_t time = common::getSysTimeMicros();
-			sprintf_s(VideoName, ".\\image_log\\camera%d\\%I64d.mp4", id_, time);
+			sprintf_s(VideoName, ".\\image_log\\camera%d\\%I64d.avi", id_, time);
 			writer.open(VideoName, VideoWriter::fourcc('M', 'J', 'P', 'G'), 20,
-				Size(1920,1080), 1);
+				Size(1920, 1080), 1);
 		}
 
 		return true;
@@ -102,16 +102,20 @@ namespace VisionMonitor
 			std::string pic_name;
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
-			{			
+			{	
+				image_ = grabimg;
 				{
 					std::lock_guard<std::mutex> locker_image_(grab_image_mutex_);
-					image_ = grabimg;
+					msgRecvQueueGrabeMat_.push_back(grabimg);
+					if (msgRecvQueueGrabeMat_.size() > 2)
+					{
+						msgRecvQueueGrabeMat_.pop_front();
+					}
 				}
 				cout << "camera " << getID() << " ×¥Í¼Ê±¼ä: " << grab_time_.toc() << "ms" << endl;
 				if (first_grab_ == false)
 					waitKey(4000);
 				first_grab_ = true;
-
 			}
 			if (param_.data_from == 0)
 			{
@@ -191,13 +195,14 @@ namespace VisionMonitor
 					{
 						string cameraid = to_string(id_);
 						imshow(cameraid, img);
+						waitKey(1);
 						writer.write(img);
 					}
 					else if (params.image_log_switch && !params.data_collection_stage)
 					{
 						imwrite(PicName, img);
 					}
-					else if (params.data_collection_stage)
+					else if (params.data_collection_stage && param_.data_collection_mp4 == false)
 					{
 						string cameraid = to_string(id_);
 						imshow(cameraid, img);

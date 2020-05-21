@@ -38,9 +38,15 @@ namespace VisionMonitor
 			opWrapper.start();
 			opWrapper.disableMultiThreading();
 		}
+		if (param_.show_current_time)
+		{
+			Title_image_ = cv::imread("./inform_image/title1.png", CV_LOAD_IMAGE_UNCHANGED);
+		}
+		else
+		{
+			Title_image_ = cv::imread("./inform_image/title2.png", CV_LOAD_IMAGE_UNCHANGED);
+		}
 
-
-		Title_image_ = cv::imread("./inform_image/title.png", CV_LOAD_IMAGE_UNCHANGED);
 		goods_image_ = cv::imread("./inform_image/goods1.png", CV_LOAD_IMAGE_UNCHANGED);
 		forklift_image_ = cv::imread("./inform_image/forklift1.png", CV_LOAD_IMAGE_UNCHANGED);
 		FileOperation fileopt;
@@ -178,6 +184,7 @@ namespace VisionMonitor
 				Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
 
 				construct_input_img(image);
+
 				Mat cal_AI_image = image.clone();
 				resize(cal_AI_image, cal_AI_image, Size(cal_AI_image.cols / param_.object_detect_desample_rate,
 					cal_AI_image.rows / param_.object_detect_desample_rate));
@@ -366,7 +373,6 @@ namespace VisionMonitor
 
 			last_have_human_ = havepeople;
 
-			
 
 			vector<float> ske_out = skeleton_res;
 			float cal_time = detect_time_.toc();
@@ -397,17 +403,21 @@ namespace VisionMonitor
 	void Monitor::display(const Mat &object_detect_outimg, 
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
-		
-		Mat outimage = draw_object_detection_image(object_detect_outimg,AI_result);
+		Mat outimage = object_detect_outimg; 
 		vector<float> skeleton_filter_res;
+		bool havepeople = false;
 		if (!skeleton_res.empty())
 		{
 			skeleton_filter_res = filter(skeleton_res, AI_result);
 			Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
 			outimage = skeleton_img;
+			if (!skeleton_filter_res.empty())
+			{
+				havepeople = true;
+			}
 		}
-
-		Mat TL_img = outimage(Rect(0, 0, 1920, 1080));
+		outimage = draw_object_detection_image(outimage,havepeople, AI_result);
+		Mat TL_img = outimage(Rect(0, 0, 1920, 1080));   
 		Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));
 		Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));
 		Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));
@@ -535,12 +545,20 @@ namespace VisionMonitor
 						float x, z;
 						locationPtFront(va, vb, x, z);
 						Point pts;
-						float dis_to_car = sqrt(x*x + z * z);
-						if (dis_to_car < 14 && dis_to_car>2)
+						float dis_to_car = sqrt(x * x + z * z);
+						if (dis_to_car < 14 && dis_to_car > 2)
 						{
 							pts.x = camera_pt.x + x * 21.33;
 							pts.y = camera_pt.y - z * 21.33;
 							InsertLogoMid(outimage, goods_image_, pts.y, pts.x, 1);
+						}
+						if (dis_to_car < 10 && abs(x) < 2)
+						{
+							Point dapts;
+							dapts.x = (int)(4 + (res.itemSite_X2 / 1.54839));
+							dapts.y = (int)(410 + (res.itemSite_Y1 / 1.70886));
+						    float dangerDis = floorf(dis_to_car * 1000) / 10;
+							putText(outimage, to_string(dangerDis), dapts, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
 						}
 					}
 					else if (res.itemClass == "Forklift")
@@ -882,7 +900,7 @@ namespace VisionMonitor
 		return skeleton_point;
 	}
 
-	Mat Monitor::draw_object_detection_image(const Mat input_image, const vector<Saveditem> &AI_result)
+	Mat Monitor::draw_object_detection_image(const Mat input_image, const bool havepeople, const vector<Saveditem> &AI_result)
 	{
 		Mat img = input_image;
 		for (auto res : AI_result)
@@ -893,11 +911,11 @@ namespace VisionMonitor
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 0), 6);
 			}
-			else if (res.itemClass == "Human")
+			else if (res.itemClass == "Human" && havepeople)
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(255, 255, 255), 6);
 			}
-			else
+			else if (res.itemClass == "Forklift")
 			{
 				cv::rectangle(img, tl, br, cv::Scalar(0, 255, 255), 6);
 			}
@@ -917,12 +935,12 @@ namespace VisionMonitor
 				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 0), -1);
 				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
 			}
-			else if (res.itemClass == "Human")
+			else if (res.itemClass == "Human" && havepeople)
 			{
 				cv::rectangle(img, tl, brRect, cv::Scalar(255, 255, 255), -1);
 				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
 			}
-			else
+			else if (res.itemClass == "Forklift")
 			{
 				cv::rectangle(img, tl, brRect, cv::Scalar(0, 255, 255), -1);
 				cv::putText(img, caption, textCorner, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
