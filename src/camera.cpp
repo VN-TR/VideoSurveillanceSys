@@ -75,7 +75,7 @@ namespace VisionMonitor
 		struPlayInfo.dwLinkMode = param.dwLinkMode; //0- TCP 方式，1- UDP 方式，2- 多播方式，3- RTP 方式，4-RTP/RTSP，5-RSTP/HTTP
 		struPlayInfo.bBlocked = param.bBlocked; //0- 非阻塞取流，1- 阻塞取流
 
-		lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
+		//lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
 
 		return true;
 	}
@@ -92,6 +92,20 @@ namespace VisionMonitor
 		//Sleep(100000);
 		//NET_DVR_StopSaveRealData(lRealPlayHandle_);
 		//return;
+		//if (NET_DVR_StartDVRRecord(lUserID_, 1, 0))
+		//{
+		//	cout << "开始" << endl;
+		//	Sleep(10000);
+		//	if (NET_DVR_StopDVRRecord(lUserID_, 1))
+		//	{
+		//		cout << "结束" << endl;
+		//	}
+
+		//}
+		//else
+		//{
+		//	cout << "失败" << endl;
+		//}
 
 		while (!close_)
 		{
@@ -99,15 +113,10 @@ namespace VisionMonitor
 			std::string pic_name;
 			Mat grabimg = grabbingFrame(param_, pic_name);
 			if (grabimg.data != NULL)
-			{
-				image_ = grabimg;
+			{			
 				{
-					std::lock_guard<std::mutex> locker_image(image_mutex_);
-					msgRecvQueueMat_.push_back(grabimg);
-					if (msgRecvQueueMat_.size() > 2)
-					{
-						msgRecvQueueMat_.pop_front();
-					}
+					std::lock_guard<std::mutex> locker_image_(grab_image_mutex_);
+					image_ = grabimg;
 				}
 				cout << "camera " << getID() << " 抓图时间: " << grab_time_.toc() << "ms" << endl;
 				if (first_grab_ == false)
@@ -117,13 +126,15 @@ namespace VisionMonitor
 			}
 			if (param_.data_from == 0)
 			{
-				Sleep(400);
+				Sleep(100);
 			}
 			else
 			{
-				Sleep(60);
+				if (param_.data_collection_stage)
+					Sleep(1);
+				else
+					Sleep(50);
 			}
-	
 		}
 	}
 
@@ -186,9 +197,8 @@ namespace VisionMonitor
 					{
 						string cameraid = to_string(id_);
 						imshow(cameraid, img);
-						imwrite(PicName, img);
-						
-						waitKey(params.data_collection_interval);
+						imwrite(PicName, img);						
+						Sleep(params.data_collection_interval);
 					}
 				}
 			};

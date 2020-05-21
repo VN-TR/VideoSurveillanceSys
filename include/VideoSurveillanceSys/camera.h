@@ -297,8 +297,8 @@ namespace VisionMonitor
 			cv::Mat						image_;						/*! <处理图像 */
 
 			//线程处理
-			std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
-			std::mutex					image_mutex_;				/*! <输入图片锁 */
+			std::list<Mat>		        msgRecvQueueGrabeMat_;			/*! <相机捕获的图像队列 */
+			std::mutex					grab_image_mutex_;				/*! <输入图片锁 */
 
 	}; // end class camera
 
