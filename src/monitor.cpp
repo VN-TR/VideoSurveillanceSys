@@ -1330,6 +1330,7 @@ namespace VisionMonitor
 		parameValue<int>(parames_map, "int", "obtain_video_width", param_.obtain_video_width);
 		parameValue<int>(parames_map, "int", "obtain_video_height", param_.obtain_video_height);
 		parameValue<bool>(parames_map, "bool", "only_show_front", param_.only_show_front);
+		parameValue<bool>(parames_map, "bool", "data_collection_mp4", param_.data_collection_mp4);
 		delete params_doc;
 		delete cameras_doc;
 

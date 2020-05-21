@@ -55,6 +55,7 @@ namespace VisionMonitor
 		int obtain_video_width = 1920;				/*!< 输出视频流宽度 */
 		int obtain_video_height = 1080;				/*!< 输出视频流高度 */
 		bool only_show_front = false;				/*!< 只显示前视 */
+		bool data_collection_mp4 = false;			/*!< 采集的是视频 */
 	};
 
 
@@ -297,8 +298,11 @@ namespace VisionMonitor
 			cv::Mat						image_;						/*! <处理图像 */
 
 			//线程处理
-			std::list<Mat>		        msgRecvQueueGrabeMat_;			/*! <相机捕获的图像队列 */
-			std::mutex					grab_image_mutex_;				/*! <输入图片锁 */
+			std::list<Mat>		        msgRecvQueueGrabeMat_;		/*! <相机捕获的图像队列 */
+			std::mutex					grab_image_mutex_;			/*! <输入图片锁 */
+
+			//视频
+			VideoWriter					writer;						/*! <写视频 */
 
 	}; // end class camera
 

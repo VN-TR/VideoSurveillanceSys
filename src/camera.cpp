@@ -44,6 +44,14 @@ namespace VisionMonitor
 		{
 			HKinit(param_);
 		}
+		if (param_.data_collection_stage && param_.data_collection_mp4)
+		{
+			char VideoName[256] = { 0 };
+			int64_t time = common::getSysTimeMicros();
+			sprintf_s(VideoName, ".\\image_log\\camera%d\\%I64d.mp4", id_, time);
+			writer.open(VideoName, VideoWriter::fourcc('M', 'J', 'P', 'G'), 20,
+				Size(1920,1080), 1);
+		}
 
 		return true;
 	}
@@ -75,7 +83,7 @@ namespace VisionMonitor
 		struPlayInfo.dwLinkMode = param.dwLinkMode; //0- TCP 方式，1- UDP 方式，2- 多播方式，3- RTP 方式，4-RTP/RTSP，5-RSTP/HTTP
 		struPlayInfo.bBlocked = param.bBlocked; //0- 非阻塞取流，1- 阻塞取流
 
-		//lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
+		lRealPlayHandle_ = NET_DVR_RealPlay_V40(lUserID_, &struPlayInfo, NULL, NULL);
 
 		return true;
 	}
@@ -87,25 +95,6 @@ namespace VisionMonitor
 
 	void Camera::grabThread()
 	{
-		//char* VideoName = "1.mp4";
-		//NET_DVR_SaveRealData(lRealPlayHandle_, VideoName);
-		//Sleep(100000);
-		//NET_DVR_StopSaveRealData(lRealPlayHandle_);
-		//return;
-		//if (NET_DVR_StartDVRRecord(lUserID_, 1, 0))
-		//{
-		//	cout << "开始" << endl;
-		//	Sleep(10000);
-		//	if (NET_DVR_StopDVRRecord(lUserID_, 1))
-		//	{
-		//		cout << "结束" << endl;
-		//	}
-
-		//}
-		//else
-		//{
-		//	cout << "失败" << endl;
-		//}
 
 		while (!close_)
 		{
@@ -136,6 +125,11 @@ namespace VisionMonitor
 					Sleep(50);
 			}
 		}
+
+		if (param_.data_collection_stage && param_.data_collection_mp4)
+		{
+			writer.release();
+		}
 	}
 
 
@@ -164,6 +158,10 @@ namespace VisionMonitor
 			std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + test_image_path_[frame_index_];
 			org_image = cv::imread(img_path);
 			img = org_image;
+			if (param_.data_collection_stage && param_.data_collection_mp4)
+			{
+				writer.write(img);
+			}
 		}
 		else
 		{
@@ -189,7 +187,13 @@ namespace VisionMonitor
 
 					resize(img, img, Size(param_.image_input_width, param_.image_input_height));
 
-					if (params.image_log_switch && !params.data_collection_stage)
+					if (param_.data_collection_stage && param_.data_collection_mp4)
+					{
+						string cameraid = to_string(id_);
+						imshow(cameraid, img);
+						writer.write(img);
+					}
+					else if (params.image_log_switch && !params.data_collection_stage)
 					{
 						imwrite(PicName, img);
 					}
