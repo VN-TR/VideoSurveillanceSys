@@ -114,12 +114,12 @@ namespace VisionMonitor
 				}
 				cout << "camera " << getID() << " ×¥Í¼Ê±¼ä: " << grab_time_.toc() << "ms" << endl;
 				if (first_grab_ == false)
-					waitKey(4000);
+					waitKey(5000);
 				first_grab_ = true;
 			}
 			if (param_.data_from == 0)
 			{
-				Sleep(100);
+				Sleep(400);
 			}
 			else
 			{

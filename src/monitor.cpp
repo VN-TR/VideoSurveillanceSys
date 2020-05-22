@@ -49,6 +49,8 @@ namespace VisionMonitor
 
 		goods_image_ = cv::imread("./inform_image/goods1.png", CV_LOAD_IMAGE_UNCHANGED);
 		forklift_image_ = cv::imread("./inform_image/forklift1.png", CV_LOAD_IMAGE_UNCHANGED);
+		dangers_area_image_ = cv::imread("./inform_image/dangersArea.png", CV_LOAD_IMAGE_UNCHANGED);
+		unsafe_image_ = cv::imread("./inform_image/unsafe.png", CV_LOAD_IMAGE_UNCHANGED);
 		FileOperation fileopt;
 
 		int isColor = param_.obtain_video_color;   //如果为0 ，可输出灰度图像
@@ -347,6 +349,7 @@ namespace VisionMonitor
 			vector<Saveditem> AI_result;
 			Mat display_image;
 			AI_result = object_detection_.DL_Detector(AI_input, input, display_image);
+			Sleep(50);
 			AI_result_ = AI_result;
 			Mat object_out_img = display_image;
 			cout << "检测计算:" << detect_time_.toc() << endl;
@@ -359,7 +362,6 @@ namespace VisionMonitor
 					break;
 				}
 			}
-			//Sleep(100);
 			vector<float> skeleton_res;
 
 			if (havepeople && last_have_human_)
@@ -367,8 +369,12 @@ namespace VisionMonitor
 				if (input.data != NULL)
 				{
 					skeleton_res = skeleton_estimation(Ske_input);
-					//Sleep(100);
+					Sleep(50);
 				}
+			}
+			else
+			{
+				Sleep(200);
 			}
 
 			last_have_human_ = havepeople;
@@ -540,39 +546,55 @@ namespace VisionMonitor
 					Point camera_pt(1587, 455);
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2;
 					float vb = res.itemSite_Y2;
+					float x, z;
+					locationPtFront(va, vb, x, z);
+					Point pts;
+					float dis_to_car = sqrt(x * x + z * z);
 					if (res.itemClass == "Goods")
 					{
-						float x, z;
-						locationPtFront(va, vb, x, z);
-						Point pts;
-						float dis_to_car = sqrt(x * x + z * z);
 						if (dis_to_car < 14 && dis_to_car > 2)
 						{
 							pts.x = camera_pt.x + x * 21.33;
 							pts.y = camera_pt.y - z * 21.33;
 							InsertLogoMid(outimage, goods_image_, pts.y, pts.x, 1);
 						}
-						if (dis_to_car < 10 && abs(x) < 2)
-						{
-							Point dapts;
-							dapts.x = (int)(4 + (res.itemSite_X2 / 1.54839));
-							dapts.y = (int)(410 + (res.itemSite_Y1 / 1.70886));
-						    float dangerDis = floorf(dis_to_car * 1000) / 10;
-							putText(outimage, to_string(dangerDis), dapts, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 0), 2, 16);
-						}
 					}
 					else if (res.itemClass == "Forklift")
 					{
-						float x, z;
-						locationPtFront(va, vb, x, z);
-						Point pts;
-						float dis_to_car = sqrt(x*x + z * z);
 						if (dis_to_car < 14 && dis_to_car>2)
 						{
 							pts.x = camera_pt.x + x * 21.33;
 							pts.y = camera_pt.y - z * 21.33;
 							InsertLogoMid(outimage, forklift_image_, pts.y, pts.x, 1);
 						}
+					}
+					if (dis_to_car < 7 && abs(x) < 2)
+					{
+						resize(dangers_area_image_, dangers_area_image_,
+							Size((res.itemSite_X2 - res.itemSite_X1) / 1.54839,
+							(res.itemSite_Y2 - res.itemSite_Y1) / 1.70886));
+						InsertLogo(outimage, dangers_area_image_,
+							410 + res.itemSite_Y1 / 1.70886, 4 + res.itemSite_X1 / 1.54839);
+						Point dapts;
+						dapts.x = (int)(4 + ((res.itemSite_X1 + res.itemSite_X2) / 2 / 1.54839));
+						dapts.y = (int)(410 + ((res.itemSite_Y1 + res.itemSite_Y2) / 2 / 1.70886));
+						InsertLogo(outimage, unsafe_image_, (dapts.y - unsafe_image_.rows / 2)-2, dapts.x - unsafe_image_.cols -5);
+						string dis = to_string(dis_to_car);
+						dis.erase(3);
+						string dis_txt = dis + "m";
+						putText(outimage, dis_txt, dapts, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 255), 2, 16);
+						Point tl(4 + res.itemSite_X1 / 1.54839, 410 + res.itemSite_Y1 / 1.70886);
+						Point br(4 + res.itemSite_X2 / 1.54839, 410 + res.itemSite_Y2 / 1.70886);
+						cv::rectangle(outimage, tl, br, cv::Scalar(0, 0, 255,(0.2)), 4);
+						float scoreRounded = floorf(res.itemscore * 1000) / 10;
+						string scoreString = to_string(scoreRounded).substr(0, 4) + "%";
+						string caption = res.itemClass + " (" + scoreString + ")";
+						int fontCoeff = 16;
+						cv::Point brRect = cv::Point(tl.x + caption.length() * fontCoeff / 1.6, tl.y + fontCoeff);
+						cv::Point textCorner = cv::Point(tl.x, tl.y + fontCoeff * 0.8);
+						cv::rectangle(outimage, tl, brRect, cv::Scalar(0, 0, 255), -1);
+						cv::putText(outimage, caption, textCorner, FONT_ITALIC, 0.5, cv::Scalar(0, 0, 0), 1.8, 16);
+
 					}
 				}
 

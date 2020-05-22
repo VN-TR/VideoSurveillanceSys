@@ -367,7 +367,8 @@ namespace VisionMonitor
 		cv::Mat						Title_image_;				/*! <界面图像 */
 		cv::Mat						goods_image_;				/*! <地图货物图标 */
 		cv::Mat						forklift_image_;			/*! <地图叉车图标 */
-
+		cv::Mat						dangers_area_image_;		/*! <地图叉车图标 */
+		cv::Mat						unsafe_image_;				/*! <地图叉车图标 */
 		//线程处理
 		std::list<Mat>		        msgRecvQueueMat_;			/*! <相机捕获的图像队列 */
 		std::mutex					image_mutex_;				/*! <输入图片锁 */
