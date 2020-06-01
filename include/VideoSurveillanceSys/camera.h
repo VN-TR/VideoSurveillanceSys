@@ -113,6 +113,7 @@ namespace VisionMonitor
 		*/
 		void grabThread();
 
+		cv::Mat grab_image_from_avi();
 
 		/*!
 		* @ brief  拍一张图片
@@ -303,6 +304,7 @@ namespace VisionMonitor
 
 			//视频
 			VideoWriter					writer;						/*! <写视频 */
+			VideoCapture				cap_;
 
 	}; // end class camera
 

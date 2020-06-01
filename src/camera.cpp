@@ -34,6 +34,12 @@ namespace VisionMonitor
 	{
 		param_ = param;
 
+		if (param_.data_from == 0)
+		{
+			std::string test_video_dir = "./test_image/camera" + std::to_string(getID()) + "/1.avi";
+			cap_ =  VideoCapture(test_video_dir);
+		}
+
 		//如果是不是图片采集阶段（运行阶段）则初始化物体检测和骨骼检测
 		if (param_.data_collection_stage == false)
 		{
@@ -92,6 +98,15 @@ namespace VisionMonitor
 	{
 		return new std::thread(&Camera::grabThread, this);
 	}
+
+	cv::Mat Camera::grab_image_from_avi()
+	{
+		cv::Mat frame_f;
+		cap_.read(frame_f);
+
+		return frame_f;
+	}
+
 
 	void Camera::grabThread()
 	{

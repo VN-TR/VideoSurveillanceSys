@@ -84,11 +84,7 @@ namespace VisionMonitor
 	void Monitor::monitorThread()
 	{
 		std::vector<std::thread*> threads;
-		for (auto camera : cameras_)
-		{
-			auto thread = camera->startGrab();
-			threads.push_back(thread);
-		}
+
 		if (!param_.data_collection_stage)
 		{
 			auto thread0 = startFusion();
@@ -128,13 +124,13 @@ namespace VisionMonitor
 		for (auto camera : cameras_)
 		{
 			string site = camera->getSite();
-			Mat camera_img = camera->getlastimage();
-			//if (frame_count_ > 3)
-			//{
-			//	Mat distort_img;
-			//	cv::undistort(camera_img,distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
-			//	camera_img = distort_img;
-			//}
+			Mat camera_img = camera->grab_image_from_avi();
+			if (frame_count_ > 2)
+			{
+				Mat distort_img;
+				cv::undistort(camera_img,distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
+				camera_img = distort_img;
+			}
 			
 			if (site == "TL" && camera_img.data != NULL)
 			{
