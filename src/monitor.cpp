@@ -405,25 +405,33 @@ namespace VisionMonitor
 	void Monitor::display(const Mat &object_detect_outimg, 
 		const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
 	{
+
 		Mat outimage = object_detect_outimg; 
 		vector<float> skeleton_filter_res;
 		bool havepeople = false;
+		//如果识别到skeleton，则通过object_detection对skeleton_res进行滤波，并且绘制骨骼图
 		if (!skeleton_res.empty())
 		{
 			skeleton_filter_res = filter(skeleton_res, AI_result);
 			Mat skeleton_img = draw_skeleton_image(outimage, skeleton_filter_res);
 			outimage = skeleton_img;
+			//如果物体识别和骨骼检测都检测到了，则判断为有人
 			if (!skeleton_filter_res.empty())
 			{
 				havepeople = true;
 			}
 		}
-		outimage = draw_object_detection_image(outimage,havepeople, AI_result);
-		Mat TL_img = outimage(Rect(0, 0, 1920, 1080));   
-		Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));
-		Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));
-		Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));
 
+		//绘制物体检测结果
+		outimage = draw_object_detection_image(outimage,havepeople, AI_result);
+
+		//将合并图切分处理
+		Mat TL_img = outimage(Rect(0, 0, 1920, 1080));				//前视图——左上——TL
+		Mat TR_img = outimage(Rect(1920, 0, 1920, 1080));			//后视图——右上——TR
+		Mat BL_img = outimage(Rect(0, 1080, 1920, 1080));			//左前图——左下——BL
+		Mat BR_img = outimage(Rect(1920, 1080, 1920, 1080));		//右前图——右下——BR
+
+		//如果只显示前方的视图
 		if (param_.only_show_front)
 		{
 			Mat single_img = TL_img;
@@ -436,17 +444,16 @@ namespace VisionMonitor
 			return;
 		}
 
+		//将各个视角的相机调整到相应大小，并插入对应位置构成界面
 		resize(TL_img, TL_img, Size(1240, 632));
 		resize(TR_img, TR_img, Size(412, 224));
 		resize(BL_img, BL_img, Size(616, 306));
 		resize(BR_img, BR_img, Size(616, 306));
-
 		Mat out_img = Mat(1080, 1920, CV_8UC3, cvScalar(255, 255, 255));
 		InsertLogoJPG(out_img, TL_img, 410, 4);
-		InsertLogoJPG(out_img, TR_img, 818, 4);
+
 		InsertLogoJPG(out_img, BL_img, 62, 4);
 		InsertLogoJPG(out_img, BR_img, 62, 628);
-
 		cv::cvtColor(out_img, out_img, cv::COLOR_BGR2BGRA);
 		InsertLogo(out_img, Title_image_, 0, 0);
 
@@ -461,6 +468,8 @@ namespace VisionMonitor
 		//将物体定位到地图中
 		outimage = drawmap(out_img, skeleton_filter_res, AI_result);
 
+		cv::cvtColor(TR_img, TR_img, cv::COLOR_BGR2BGRA);
+		InsertLogo(out_img, TR_img, 818, 4);
 		//打印当前帧数到右上角
 		if (param_.show_FPS)
 		{
@@ -483,12 +492,13 @@ namespace VisionMonitor
 		namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 		imshow("VideoSurveillanceSys", out_img);
 		waitKey(1);
+
+		//以视频的方式显示出来
 		if (param_.obtain_video)
 		{
 			resize(out_img, out_img, Size(param_.obtain_video_width, param_.obtain_video_height));
 			cvtColor(out_img, out_img, CV_BGRA2BGR);
 			writer.write(out_img);
-
 		}
 
 		cout << "frame_count_" << frame_count_ << endl;
@@ -506,7 +516,7 @@ namespace VisionMonitor
 				//后视
 				if (res.itemSite_X1 >= 1920 && res.itemSite_Y2 < 1080)
 				{
-					Point camera_pt(1587, 500);
+					Point camera_pt(1587, 500);  //后视相机在地图上的坐标
 					float va = (res.itemSite_X1 + res.itemSite_X2) / 2 - 1920;
 					float vb = res.itemSite_Y2;
 					if (res.itemClass == "Goods")
@@ -514,7 +524,7 @@ namespace VisionMonitor
 						float x, z;
 						locationPt(va, vb, x, z);
 						Point pts;
-						float dis_to_car = sqrt(x*x + z * z);
+						float dis_to_car = sqrt(x * x + z * z);
 						if (dis_to_car < 14 && dis_to_car>2)
 						{
 							pts.x = camera_pt.x - x * 21.33;
@@ -527,7 +537,7 @@ namespace VisionMonitor
 						float x, z;
 						locationPt(va, vb, x, z);
 						Point pts;
-						float dis_to_car = sqrt(x*x + z * z);
+						float dis_to_car = sqrt(x * x + z * z);
 						if (dis_to_car < 14 && dis_to_car>2)
 						{
 							pts.x = camera_pt.x - x * 21.33;
