@@ -159,7 +159,8 @@ namespace VisionMonitor
 		if (0== param_.data_from)
 		{
 			if (frame_index_ >= test_image_path_.size()) return img;
-			std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + test_image_path_[frame_index_];
+			//std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + test_image_path_[frame_index_];
+			std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + to_string(frame_index_)+".jpg";
 			org_image = cv::imread(img_path);
 			img = org_image;
 			if (param_.data_collection_stage && param_.data_collection_mp4)
