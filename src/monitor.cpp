@@ -85,6 +85,17 @@ namespace VisionMonitor
 	{
 		std::vector<std::thread*> threads;
 
+		//如果在线（跑程序及采集数据），才采用相机抓图
+		if (param_.data_from == OnLine)
+		{
+			for (auto camera : cameras_)
+			{
+				auto thread = camera->startGrab();
+				threads.push_back(thread);
+			}
+		}
+
+		//如果不是数据采集阶段才计算和显示
 		if (!param_.data_collection_stage)
 		{
 			auto thread0 = startFusion();

@@ -34,22 +34,18 @@ namespace VisionMonitor
 	{
 		param_ = param;
 
-		if (param_.data_from == 0)
+		if (param_.data_from == OffLine)
 		{
 			std::string test_video_dir = "./test_image/camera" + std::to_string(getID()) + "/1.avi";
 			cap_ =  VideoCapture(test_video_dir);
 		}
 
-		//如果是不是图片采集阶段（运行阶段）则初始化物体检测和骨骼检测
-		if (param_.data_collection_stage == false)
-		{
-
-		}
-		//如果是图片采集阶段或运行阶段使用实时数据时,初始化相机硬件
-		if (param_.data_collection_stage == true || param_.data_from)
+		//如果使用实时数据时,初始化相机硬件
+		if (param_.data_from == OnLine)
 		{
 			HKinit(param_);
 		}
+		//如果是数据采集阶段，并且采集的是视频的话，则创建视频文件
 		if (param_.data_collection_stage && param_.data_collection_mp4)
 		{
 			char VideoName[256] = { 0 };
@@ -131,14 +127,16 @@ namespace VisionMonitor
 					waitKey(5000);
 				first_grab_ = true;
 			}
+			//如果是离线跑视频（屏蔽）
 			if (param_.data_from == 0)
 			{
-				Sleep(400);
+				/*Sleep(400);*/
 			}
+			//如果在线
 			else
 			{
 				if (param_.data_collection_stage)
-					Sleep(1);
+					Sleep(10);
 				else
 					Sleep(50);
 			}
@@ -158,30 +156,29 @@ namespace VisionMonitor
 		char sJpegPicBuffer[1024] = { 0 };
 		cv::Mat img, org;
 		frame_index_++;
-		if (0== param_.data_from && !path_loaded_)
-		{
-			path_loaded_ = true;
-			FileOperation               file_opt;
-			std::string test_image_dir = "./test_image/camera" + std::to_string(getID());
-			cout << test_image_dir << endl;
-			file_opt.getFileNameList(test_image_dir, ".jpg", test_image_path_);
-		}
+
+		//如果是离线且第一个则读取全部
+		//if (0== param_.data_from && !path_loaded_)
+		//{
+		//	path_loaded_ = true;
+		//	FileOperation               file_opt;
+		//	std::string test_image_dir = "./test_image/camera" + std::to_string(getID());
+		//	cout << test_image_dir << endl;
+		//	file_opt.getFileNameList(test_image_dir, ".jpg", test_image_path_);
+		//}
 		
 
 		cv::Mat org_image;
-		// read image
+		
+		//如果是离线,离线不负责采集程序，这里主要是离线图片读取（暂时弃用）
 		if (0== param_.data_from)
 		{
-			if (frame_index_ >= test_image_path_.size()) return img;
-			//std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + test_image_path_[frame_index_];
-			std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + to_string(frame_index_)+".jpg";
-			org_image = cv::imread(img_path);
-			img = org_image;
-			if (param_.data_collection_stage && param_.data_collection_mp4)
-			{
-				writer.write(img);
-			}
+				//if (frame_index_ >= test_image_path_.size()) return img;
+				//std::string  img_path = "./test_image/camera" + std::to_string(getID()) + "/" + to_string(frame_index_) + ".jpg";
+				//org_image = cv::imread(img_path);
+				//img = org_image;
 		}
+		//在线
 		else
 		{
 			int64_t time = common::getSysTimeMicros();
@@ -192,20 +189,30 @@ namespace VisionMonitor
 			DWORD dwBufSize1 = 1920 * 1080*1.5;
 			DWORD dwBufSize2;
 			
+			//在线视频流抓图
 			if (PlayM4_GetJPEG(lRealPlayHandle_, pBuffer1, dwBufSize1, &dwBufSize2))
 			{
+				//解码
 				cv::Mat rawData(1, dwBufSize2, CV_8UC1, (void*)pBuffer1);
 				cv::Mat decodedImage = cv::imdecode(rawData, 1);
+
+				//如果不为空，则处理后输出
 				if (decodedImage.data != NULL)
 				{
 					img = decodedImage;	
+					//如果需要反转
 					if (param_.image_input_flip)
 					{
 						flip(img,img, param_.image_input_flipcode);
 					}
+					//如果需要调整大小
+					if (param_.image_input_height != 1080)
+					{
+						resize(img, img, Size(param_.image_input_width, param_.image_input_height));
+					}
 
-					resize(img, img, Size(param_.image_input_width, param_.image_input_height));
-
+					//数据采集
+					//如果是数据采集阶段、且采集类型为视频
 					if (param_.data_collection_stage && param_.data_collection_mp4)
 					{
 						string cameraid = to_string(id_);
@@ -213,10 +220,7 @@ namespace VisionMonitor
 						waitKey(1);
 						writer.write(img);
 					}
-					else if (params.image_log_switch && !params.data_collection_stage)
-					{
-						imwrite(PicName, img);
-					}
+					//如果不是视频
 					else if (params.data_collection_stage && param_.data_collection_mp4 == false)
 					{
 						string cameraid = to_string(id_);
