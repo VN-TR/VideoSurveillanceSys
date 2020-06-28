@@ -40,7 +40,7 @@ namespace VisionMonitor
 		tfutil_.BuildSession();
 	}
 	
-	vector<Saveditem> ObjectDetection::DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output)
+	vector<Saveditem> ObjectDetection::DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output,bool only_front)
 	{
 
 		Mat frame = img_input;
@@ -96,58 +96,62 @@ namespace VisionMonitor
 			tl = cv::Point((int)(boxes[4 * i + 1] * img_output.cols), (int)(boxes[4 * i] * img_output.rows));
 			br = cv::Point((int)(boxes[4 * i + 3] * img_output.cols), (int)(boxes[4 * i + 2] * img_output.rows));
 
-			cv::Point mid;
-			mid = cv::Point((int)((tl.x + br.x) / 2), (int)((tl.y + br.y) / 2));
-			//左上
-			if (mid.x < 1920 && mid.y < 1080)
+			if (!only_front)
 			{
-				if (br.x > 1920)
+				cv::Point mid;
+				mid = cv::Point((int)((tl.x + br.x) / 2), (int)((tl.y + br.y) / 2));
+				//左上
+				if (mid.x < 1920 && mid.y < 1080)
 				{
-					br = cv::Point(1919, br.y);
+					if (br.x > 1920)
+					{
+						br = cv::Point(1919, br.y);
+					}
+					if (br.y > 1080)
+					{
+						br = cv::Point(br.x, 1079);
+					}
 				}
-				if (br.y > 1080)
+				//左下
+				else if (mid.x < 1920 && mid.y >1080)
 				{
-					br = cv::Point(br.x, 1079);
-				}
-			}
-			//左下
-			else if (mid.x < 1920 && mid.y >1080)
-			{
-				if (br.x > 1920)
-				{
-					br = cv::Point(1919, br.y);
-				}
-				if (tl.y < 1080)
-				{
-					tl = cv::Point(tl.x,1081);
-				}
+					if (br.x > 1920)
+					{
+						br = cv::Point(1919, br.y);
+					}
+					if (tl.y < 1080)
+					{
+						tl = cv::Point(tl.x, 1081);
+					}
 
-			}
-			//右上
-			else if (mid.x > 1920 && mid.y < 1080)
-			{
-				if (tl.x < 1920)
-				{
-					br = cv::Point(1921, tl.y);
 				}
-				if (br.y > 1080)
+				//右上
+				else if (mid.x > 1920 && mid.y < 1080)
 				{
-					br = cv::Point(br.x, 1079);
-				}
+					if (tl.x < 1920)
+					{
+						br = cv::Point(1921, tl.y);
+					}
+					if (br.y > 1080)
+					{
+						br = cv::Point(br.x, 1079);
+					}
 
-			}
-			//右下
-			else if (mid.x > 1920 && mid.y >1080)
-			{
-				if (tl.x < 1920)
+				}
+				//右下
+				else if (mid.x > 1920 && mid.y > 1080)
 				{
-					br = cv::Point(1921, tl.y);
-				}		
-				if (tl.y < 1080)
-				{
-					tl = cv::Point(tl.x, 1081);
+					if (tl.x < 1920)
+					{
+						br = cv::Point(1921, tl.y);
+					}
+					if (tl.y < 1080)
+					{
+						tl = cv::Point(tl.x, 1081);
+					}
 				}
 			}
+
 			itemInfomation_.push_back(Saveditem(label, tl.x, br.x, tl.y, br.y,scores[i]));
 		}
 

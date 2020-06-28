@@ -85,7 +85,7 @@ namespace VisionMonitor
 		* @ return     std::vector<Saveditem>  Êä³ö¼ì²â½á¹û
 		* @ note
 		*/
-		vector<Saveditem> DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output);
+		vector<Saveditem> DL_Detector(const cv::Mat &img_input, const cv::Mat &draw, cv::Mat &img_output , bool only_front);
 		
 		void ObjectDetection::Release();
 	private:

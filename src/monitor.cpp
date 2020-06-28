@@ -135,38 +135,68 @@ namespace VisionMonitor
 		for (auto camera : cameras_)
 		{
 			string site = camera->getSite();
-			Mat camera_img = camera->grab_image_from_avi();
-			if (frame_count_ > 2)
+
+			Mat camera_img;
+
+			//如果只跑第一个相机
+			if (param_.only_show_front)
 			{
-				Mat distort_img;
-				cv::undistort(camera_img,distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
-				camera_img = distort_img;
+				if (site == "TL")
+				{
+					//如果是离线，则从离线视频中拿图
+					if (param_.data_from == OffLine)
+						camera_img = camera->grab_image_from_avi();
+					else
+						camera_img = camera->getlastimage();
+
+					Mat distort_img;
+					cv::undistort(camera_img, distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
+					camera_img = distort_img;
+					cv::resize(camera_img, input_img, Size(3840, 2160));
+				}
 			}
-			
-			if (site == "TL" && camera_img.data != NULL)
+			else
 			{
-				cv::Mat imageROI;
-				imageROI = input_img(cv::Rect(0, 0, 1920, 1080));
-				camera_img.copyTo(imageROI);
+				//如果是离线，则从离线视频中拿图
+				if (param_.data_from == OffLine)
+					camera_img = camera->grab_image_from_avi();
+				else
+					camera_img = camera->getlastimage();
+
+				if (frame_count_ > 2)
+				{
+					Mat distort_img;
+					cv::undistort(camera_img, distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
+					camera_img = distort_img;
+				}
+
+				if (site == "TL" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = input_img(cv::Rect(0, 0, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+				if (site == "TR" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = input_img(cv::Rect(1920, 0, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+				if (site == "BL" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = input_img(cv::Rect(0, 1080, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+				if (site == "BR" && camera_img.data != NULL)
+				{
+					cv::Mat imageROI;
+					imageROI = input_img(cv::Rect(1920, 1080, 1920, 1080));
+					camera_img.copyTo(imageROI);
+				}
+
 			}
-			if (site == "TR" && camera_img.data != NULL)
-			{
-				cv::Mat imageROI;
-				imageROI = input_img(cv::Rect(1920, 0, 1920, 1080));
-				camera_img.copyTo(imageROI);
-			}
-			if (site == "BL" && camera_img.data != NULL)
-			{
-				cv::Mat imageROI;
-				imageROI = input_img(cv::Rect(0, 1080, 1920, 1080));
-				camera_img.copyTo(imageROI);
-			}
-			if (site == "BR" && camera_img.data != NULL)
-			{
-				cv::Mat imageROI;
-				imageROI = input_img(cv::Rect(1920, 1080, 1920, 1080));
-				camera_img.copyTo(imageROI);
-			}
+		
 		}
 	}
 	std::thread* Monitor::startFusion()
@@ -355,8 +385,9 @@ namespace VisionMonitor
 			detect_time_.tic();
 			vector<Saveditem> AI_result;
 			Mat display_image;
-			AI_result = object_detection_.DL_Detector(AI_input, input, display_image);
-			Sleep(50);
+			AI_result = object_detection_.DL_Detector(AI_input, input, display_image,param_.only_show_front);
+			if (param_.data_from == OffLine)
+				Sleep(50);
 			AI_result_ = AI_result;
 			Mat object_out_img = display_image;
 			cout << "检测计算:" << detect_time_.toc() << endl;
@@ -376,12 +407,14 @@ namespace VisionMonitor
 				if (input.data != NULL)
 				{
 					skeleton_res = skeleton_estimation(Ske_input);
-					Sleep(50);
+					if (param_.data_from == OffLine)
+						Sleep(50);
 				}
 			}
 			else
 			{
-				Sleep(200);
+				if (param_.data_from == OffLine)
+					Sleep(200);
 			}
 
 			last_have_human_ = havepeople;
@@ -445,11 +478,16 @@ namespace VisionMonitor
 		//如果只显示前方的视图
 		if (param_.only_show_front)
 		{
-			Mat single_img = TL_img;
+			Mat single_img = outimage;
+			cv::cvtColor(single_img, single_img, cv::COLOR_BGR2BGRA);
+			resize(single_img, single_img, Size(1920, 1080));
+			single_img = drawmap_onlyfront(single_img, skeleton_filter_res, AI_result);
+
+			resize(single_img, single_img, Size(param_.obtain_video_width, param_.obtain_video_height));
 			namedWindow("VideoSurveillanceSys", CV_WINDOW_NORMAL);
 			imshow("VideoSurveillanceSys", single_img);
 			waitKey(1);
-			resize(single_img, single_img, Size(param_.obtain_video_width, param_.obtain_video_height));
+			cvtColor(single_img, single_img, CV_BGRA2BGR);
 			writer.write(single_img);
 			frame_count_++;
 			return;
@@ -790,6 +828,59 @@ namespace VisionMonitor
 						circle(outimage, pts, 12, Scalar(0, 0, 255), -1);
 					}
 				}
+			}
+		}
+		return outimage;
+	}
+
+	Mat Monitor::drawmap_onlyfront(const Mat &displayimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result)
+	{
+		Mat outimage = displayimg;
+		if (!AI_result.empty())
+		{
+			for (auto res : AI_result)
+			{
+				res.itemSite_X1 = res.itemSite_X1;
+				res.itemSite_X2 = res.itemSite_X2;
+				res.itemSite_Y1 = res.itemSite_Y1;
+				res.itemSite_Y2 = res.itemSite_Y2;
+
+				float va = (res.itemSite_X1 + res.itemSite_X2) / 4;
+				float vb = res.itemSite_Y2/2;
+				float x, z;
+				locationPtFront(va, vb, x, z);
+				Point pts;
+				float dis_to_car = sqrt(x * x + z * z);
+
+				if (dis_to_car < 7 && abs(x) < 2)
+				{
+					resize(dangers_area_image_, dangers_area_image_,
+						Size((res.itemSite_X2 - res.itemSite_X1) / 2,
+						(res.itemSite_Y2 - res.itemSite_Y1) / 2));
+					InsertLogo(outimage, dangers_area_image_,
+						 res.itemSite_Y1 / 2,res.itemSite_X1 / 2);
+					Point dapts;
+					dapts.x = (int)(((res.itemSite_X1 + res.itemSite_X2) / 2 /2));
+					dapts.y = (int)(((res.itemSite_Y1 + res.itemSite_Y2) / 2 / 2));
+					InsertLogo(outimage, unsafe_image_, (dapts.y - unsafe_image_.rows / 2) - 2, dapts.x - unsafe_image_.cols - 5);
+					string dis = to_string(dis_to_car);
+					dis.erase(3);
+					string dis_txt = dis + "m";
+					putText(outimage, dis_txt, dapts, FONT_ITALIC, 0.8, cv::Scalar(0, 0, 255), 2, 16);
+					Point tl(res.itemSite_X1 / 2,res.itemSite_Y1 / 2);
+					Point br(res.itemSite_X2 / 2, res.itemSite_Y2 / 2);
+					cv::rectangle(outimage, tl, br, cv::Scalar(0, 0, 255, (0.2)), 4);
+					float scoreRounded = floorf(res.itemscore * 1000) / 10;
+					string scoreString = to_string(scoreRounded).substr(0, 4) + "%";
+					string caption = res.itemClass + " (" + scoreString + ")";
+					int fontCoeff = 16;
+					cv::Point brRect = cv::Point(tl.x + caption.length() * fontCoeff / 1.6, tl.y + fontCoeff);
+					cv::Point textCorner = cv::Point(tl.x, tl.y + fontCoeff * 0.8);
+					cv::rectangle(outimage, tl, brRect, cv::Scalar(0, 0, 255), -1);
+					cv::putText(outimage, caption, textCorner, FONT_ITALIC, 0.5, cv::Scalar(0, 0, 0), 1.8, 16);
+
+				}
+				
 			}
 		}
 		return outimage;

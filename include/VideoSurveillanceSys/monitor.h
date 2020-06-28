@@ -205,6 +205,7 @@ namespace VisionMonitor
 		*/
 		Mat drawmap(const Mat &displayimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result);
 
+		Mat drawmap_onlyfront(const Mat &displayimg, const vector<float> &skeleton_res, const vector<Saveditem> &AI_result);
 		/*!
 		* @ brief  对人体骨骼进行评估
 		* @ author ybc
