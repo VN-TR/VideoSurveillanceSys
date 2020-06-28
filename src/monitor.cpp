@@ -698,16 +698,6 @@ namespace VisionMonitor
 					pt_human.x = (pt_left.x + pt_right.x) / 2;
 					pt_human.y = (pt_left.y + pt_right.y) / 2;
 				}
-				else if (pt_left.x != 0)
-				{
-					pt_human.x = (pt_left.x) / 2;
-					pt_human.y = (pt_left.y) / 2;
-				}
-				else if (pt_right.x != 0)
-				{
-					pt_human.x = (pt_right.x) / 2;
-					pt_human.y = (pt_right.y) / 2;
-				}
 				float va = pt_human.x;
 				float vb = pt_human.y;
 				for (auto res : AI_result)

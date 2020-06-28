@@ -391,7 +391,7 @@ namespace VisionMonitor
 		//输出视频
 		char filename[75]; //定义数组，其中数组大小大于等于图片的个数
 		int isColor = 1;   //如果为0 ，可输出灰度图像
-		int fps = 12;
+		int fps = 20;
 	};
 
 

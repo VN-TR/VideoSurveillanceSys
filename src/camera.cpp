@@ -103,7 +103,6 @@ namespace VisionMonitor
 	{
 		cv::Mat frame_f;
 		cap_.read(frame_f);
-
 		return frame_f;
 	}
 

@@ -95,6 +95,7 @@ namespace VisionMonitor
 			cv::Point tl, br;
 			tl = cv::Point((int)(boxes[4 * i + 1] * img_output.cols), (int)(boxes[4 * i] * img_output.rows));
 			br = cv::Point((int)(boxes[4 * i + 3] * img_output.cols), (int)(boxes[4 * i + 2] * img_output.rows));
+
 			cv::Point mid;
 			mid = cv::Point((int)((tl.x + br.x) / 2), (int)((tl.y + br.y) / 2));
 			//×óÉÏ
