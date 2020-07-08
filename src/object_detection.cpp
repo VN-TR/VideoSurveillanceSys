@@ -25,17 +25,17 @@ namespace VisionMonitor
 	void ObjectDetection::Init()
 	{
 		INPUT_NODES_ = { "image_tensor" };
-		OUTPUT_NODES_ = { "detection_boxes", "detection_scores", "detection_classes" };
+		OUTPUT_NODES_ = { "detection_boxes", "detection_scores", "detection_classes","num_detections" };
 		//_OUTPUT_NODES = {"num_detections" };
 		MODEL_NAME_ = "models/object_detection/frozen_inference_graph.pb";
 		label_path_ = "models/object_detection/labelmap.pbtxt";
-		out_dims_ = { 1 };
+		out_dims_ = { 4 };
 		tfutil_ = dnn_tensorflow();
 		std::vector<uint8_t> config = { 0x32,0xc,0x9,0x33,0x33, 0x33, 0x33, 0x33, 0x33, 0xc3,0x3f,0x2a,0x1,0x30 };
 		readLabelMap();
 		tfutil_.InitTFEnvironment(config);
 		tfutil_.LoadGraph(MODEL_NAME_.c_str(), true);
-		tfutil_.CreateIO_Ops(INPUT_NODES_, input_ops);
+		tfutil_.CreateIO_Ops_In(INPUT_NODES_, input_ops);
 		tfutil_.CreateIO_Ops(OUTPUT_NODES_, output_ops);
 		tfutil_.BuildSession();
 	}
@@ -58,8 +58,8 @@ namespace VisionMonitor
 
 		input_tensor = { tfutil_.CreateTensor(TF_UINT8,input_dims_,input_data) };
 		output_tensor = { tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_), tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_),
-		 tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_)};
-
+		 tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_),tfutil_.CreateEmptyTensor(TF_UINT8,out_dims_) };
+		
 		tfutil_.RunSession(input_ops, input_tensor.data(), input_tensor.size(),
 			output_ops, output_tensor.data(), output_tensor.size());
 

@@ -39,11 +39,14 @@ namespace VisionMonitor
 			std::string test_video_dir = "./test_image/camera" + std::to_string(getID()) + "/1.avi";
 			cap_ =  VideoCapture(test_video_dir);
 		}
+		cout << "start monitor init" << endl;
 
 		//如果使用实时数据时,初始化相机硬件
 		if (param_.data_from == OnLine)
 		{
+			cout << "camera sdk init start" << endl;
 			HKinit(param_);
+			cout << "camera sdk init end" << endl;
 		}
 		//如果是数据采集阶段，并且采集的是视频的话，则创建视频文件
 		if (param_.data_collection_stage && param_.data_collection_mp4)

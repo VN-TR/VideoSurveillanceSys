@@ -127,6 +127,17 @@ void dnn_tensorflow::CreateIO_Ops(std::vector<const char*> node_names_vec, TF_Ou
 	}
 }
 
+void dnn_tensorflow::CreateIO_Ops_In(std::vector<const char*> node_names_vec, TF_Input ops[])
+{
+	assert(node_names_vec.size() > 0);
+
+	for (int i = 0; i < node_names_vec.size(); i++)
+	{
+		TF_Operation* op = TF_GraphOperationByName(_graph, node_names_vec[i]);
+		ops[i] = { op, 0 };
+	}
+}
+
 void dnn_tensorflow::DeleteTensor(TF_Tensor* tensor)
 {
 	if (tensor != nullptr)
@@ -141,7 +152,7 @@ void dnn_tensorflow::DeleteTensor(std::vector<TF_Tensor*> tensors)
 	}
 }
 
-void dnn_tensorflow::RunSession(TF_Output* inputs, TF_Tensor* const *input_values, int ninputs,
+void dnn_tensorflow::RunSession(TF_Input* inputs, TF_Tensor* const *input_values, int ninputs,
 	TF_Output* outputs, TF_Tensor** output_values, int noutputs)
 {
 	TF_SessionRun(

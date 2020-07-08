@@ -149,10 +149,13 @@ namespace VisionMonitor
 					else
 						camera_img = camera->getlastimage();
 
-					Mat distort_img;
-					cv::undistort(camera_img, distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
-					camera_img = distort_img;
-					cv::resize(camera_img, input_img, Size(3840, 2160));
+					if (frame_count_ > 2)
+					{
+						Mat distort_img;
+						cv::undistort(camera_img, distort_img, camera->getIntrinsicMatrix(), camera->getDistortionCoeffs());
+						camera_img = distort_img;
+						cv::resize(camera_img, input_img, Size(3840, 2160));
+					}
 				}
 			}
 			else
@@ -174,6 +177,7 @@ namespace VisionMonitor
 				{
 					cv::Mat imageROI;
 					imageROI = input_img(cv::Rect(0, 0, 1920, 1080));
+					cv::resize(camera_img, camera_img, Size(1920, 1080));
 					camera_img.copyTo(imageROI);
 				}
 				if (site == "TR" && camera_img.data != NULL)
@@ -217,11 +221,10 @@ namespace VisionMonitor
 					nopic = true;
 				}
 			}
+			Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
+
 			if (nopic == true)
 			{
-				
-				Mat image = Mat(2160, 3840, CV_8UC3, cvScalar(255, 255, 255));
-
 				construct_input_img(image);
 
 				Mat cal_AI_image = image.clone();
@@ -258,7 +261,10 @@ namespace VisionMonitor
 
 				Sleep(1);
 			}
-
+			else
+			{
+				Sleep(10);
+			}
 		}
 	}
 
@@ -369,11 +375,15 @@ namespace VisionMonitor
 				}
 			}
 			image_ = img;
-			if (image_.data != NULL)
+			if (image_.data != NULL && cal_AI_image.data!=NULL && cal_Ske_image.data!=NULL)
 			{
 				total_detect_time_.tic();
 				detect(image_,cal_AI_image,cal_Ske_image);
 				cout << "检测总耗时" << total_detect_time_.toc() << endl;
+			}
+			else
+			{
+				Sleep(10);
 			}
 		}
 	}
@@ -386,8 +396,8 @@ namespace VisionMonitor
 			vector<Saveditem> AI_result;
 			Mat display_image;
 			AI_result = object_detection_.DL_Detector(AI_input, input, display_image,param_.only_show_front);
-			if (param_.data_from == OffLine)
-				Sleep(50);
+			//if (param_.data_from == OffLine)
+			//	Sleep(50);
 			AI_result_ = AI_result;
 			Mat object_out_img = display_image;
 			cout << "检测计算:" << detect_time_.toc() << endl;
@@ -407,14 +417,14 @@ namespace VisionMonitor
 				if (input.data != NULL)
 				{
 					skeleton_res = skeleton_estimation(Ske_input);
-					if (param_.data_from == OffLine)
-						Sleep(50);
+					//if (param_.data_from == OffLine)
+					//	Sleep(50);
 				}
 			}
 			else
 			{
-				if (param_.data_from == OffLine)
-					Sleep(200);
+				//if (param_.data_from == OffLine)
+				//	Sleep(200);
 			}
 
 			last_have_human_ = havepeople;
@@ -1376,7 +1386,7 @@ namespace VisionMonitor
 		std::map<std::string, std::string> parames_map;
 		std::string params_file = "./config/VideoSurveillance.config";
 		std::string cameras_file = "./config/Cameras.config";
-
+		
 
 		if (_access(params_file.c_str(), 0) == -1)
 		{
@@ -1435,7 +1445,7 @@ namespace VisionMonitor
 			cameratemp->setDistortionCoeffs(distortion_coeffs);
 			cameras_.push_back(cameratemp);
 		}
-
+		cout << "camera loss" << endl;
 		//加载监控参数;
 		for (tinyxml2::XMLElement *param_xml = params_root->FirstChildElement(); param_xml != nullptr; param_xml = param_xml->NextSiblingElement())
 		{

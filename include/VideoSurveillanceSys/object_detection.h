@@ -109,7 +109,7 @@ namespace VisionMonitor
 		std::vector<std::int64_t>	input_dims_;							/*! <输入维度 */
 		size_t						input_tensor_element_count_;			/*! <输入张量个数 */
 		std::vector<std::int64_t>	out_dims_;								/*! <输出维度 */
-		TF_Output					input_ops[1];							/*! <输入 */
+		TF_Input					input_ops[1];							/*! <输入 */
 		TF_Output					output_ops[4];							/*! <输出 */
 	};
 

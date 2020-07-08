@@ -45,11 +45,11 @@ public:
 	TF_Tensor* CreateEmptyTensor(TF_DataType data_type, const std::int64_t* dims, std::size_t num_dims);
 
 	void CreateIO_Ops(std::vector<const char*> node_names_vec, TF_Output ops[]);
-
+	void CreateIO_Ops_In(std::vector<const char*> node_names_vec, TF_Input ops[]);
 	void DeleteTensor(TF_Tensor* tensor);
 	void DeleteTensor(std::vector<TF_Tensor*> tensors);
 
-	void RunSession(TF_Output* inputs, TF_Tensor* const *input_values, int ninputs,
+	void RunSession(TF_Input* inputs, TF_Tensor* const *input_values, int ninputs,
 		TF_Output* outputs, TF_Tensor** output_values, int noutputs);
 
 
